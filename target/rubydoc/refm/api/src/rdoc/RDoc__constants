@@ -1,0 +1,19 @@
+--- GENERAL_MODIFIERS  -> [String]
+
+라이브러리 내부에서 사용합니다.
+
+--- CLASS_MODIFIERS    -> [String]
+
+라이브러리 내부에서 사용합니다.
+
+--- ATTR_MODIFIERS     -> [String]
+
+라이브러리 내부에서 사용합니다.
+
+--- CONSTANT_MODIFIERS -> [String]
+
+라이브러리 내부에서 사용합니다.
+
+--- METHOD_MODIFIERS   -> [String]
+
+라이브러리 내부에서 사용합니다.

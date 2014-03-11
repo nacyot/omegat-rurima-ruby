@@ -1,0 +1,7 @@
+= class TkTextMarkCurrent < TkTextNamedMark
+
+
+== Class Methods
+
+--- new(parent, *args)
+#@todo

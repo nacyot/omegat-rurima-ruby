@@ -1,0 +1,10 @@
+= class ArgumentError < StandardError
+
+인수의 수가 맞지 않거나 수는 맞지만 기대되는 값이 아니면 발생합니다.(참고: [[c:TypeError]]).
+
+예:
+
+  Time.at       # => wrong number of arguments (0 for 1) (ArgumentError)
+  Array.new(-1) # => negative array size (ArgumentError)
+
+등

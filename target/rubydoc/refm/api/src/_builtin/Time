@@ -1,0 +1,778 @@
+= class Time < Object
+
+include Comparable
+
+시각을 나타내는 클래스입니다.
+
+[[m:Time.now]] 메소드는 현재 시간을 리턴합니다.
+[[m:File.mtime]] 메소드와 같은 파일의 타임스탬프는 Time 객체입니다.
+
+Time 객체는 특정 시각을 기준 시각에서부터 초 단위로 저장하고 있습니다.
+기준 시각은 협정세계시 UTC에 따른 1970년 1월 1일 오전 0시입니다.또한 윤초의 포함 여부는 시스템에 의존합니다.
+
+현재 Unix 시스템에서 사용할 수 있는 최대시각은
+협정 세계시 기준 2038년 1월 19일 오전 3시 14분 7초입니다.
+#@# ENV["TZ"]=""; p Time.at(0x7fffffff) # => Tue Jan 19 03:14:07 UTC 2038
+
+Time 객체에 담을 수 있는 시각의 범위는 운영체제에 따라 달라집니다.
+사용할 수 있는 시각 범위의 하한은 기준시점에서 경과한 초를 0이나 정수만
+사용할 수 있는 시스템도 있고 음수를 사용할 수 있는 시스템도 있습니다.
+반대로 사용할 수 있는 시각 범위의 상한은 Unix 시스템의 최대시각을 넘어서
+64bit 값을 경과한 초로 사용할 수 있는 시스템도 있습니다.
+또한 다른 시각을 기준으로 그 시각을 넘은 값은 사용할 수 없는 시스템도 있습니다.
+Time 객체를 생성하는 각 메소드는 시스템에 따라
+사용할 수 있는 범위를 넘어선 값을 사용하려고 하면 예외를 발생시킵니다.
+
+또한 Time 객체는 타임존의 기준이 협정세계시인지 지방시인지 여부를
+담은 플래그를 가지고 있습니다.
+#@since 1.9.1
+타임존 플래그는 Marshal 데이터로 저장됩니다.
+
+  p Marshal.load(Marshal.dump(Time.now.gmtime)).zone
+  # => "UTC"
+#@else
+단 이 정보는
+[[m:Marshal.#dump]] 메소드로 저장할 수 없으며,[[m:Marshal.#load]]
+메소드로 읽어온 Time 객체의 타임존 정보는 항상 지방시를
+기준으로 합니다.
+
+  p Marshal.load(Marshal.dump(Time.now.gmtime)).zone
+  # => "JST"
+
+#@end
+
+[[lib:time]] 라이브러리로 [[m:Time.parse]], [[m:Time.rfc2822]], [[m:Time.httpdate]], [[m:Time.iso8601]]를 확장할 수 있습니다. @@@
+
+[[man:localtime(3)]]도 참고해주세요.
+
+=== C 언어와의 차이점
+
+C 언에의 tm 구조체와 달리 month는 1월이면
+1을 리턴하고 year은 1998년이면 1998을 리턴합니다.그리고 yday는 1부터 헤아립니다.
+
+
+== Class Methods
+
+--- at(time)    -> Time
+
+time에 지정한 시각을 가진 Time 객체를 리턴합니다.
+
+인수가 수치이면 생성되는 Time 객체의 타임존은 지방시를 기준으로 합니다.
+
+@param time Time 객체나 기준 시각으로부터 초 단위로 헤아린 숫자를 지정합니다.
+
+--- at(time, usec)    -> Time
+
+time + (usec/1000000)의 시각을 나타내는 Time 객체를 리턴합니다.
+부동소수점의 정밀도가 충분하지 않을 때 사용합니다.
+
+만들어진 Time 객체의 타임존은 지방시를 기준으로 합니다.
+
+@param time Time 기준 시각으로부터 초 단위로 헤아린 숫자를 지정합니다.
+
+@param usec 마이크로 초를 정수로 지정합니다.
+
+--- gm(year, mon = 1, day = 1, hour = 0, min = 0, sec = 0, usec = 0)             -> Time
+--- utc(year, mon = 1, day = 1, hour = 0, min = 0, sec = 0, usec = 0)            -> Time
+
+주어진 인수들에 따라 협정 세계시를 기준으로 한 Time 객체를 리턴합니다.
+
+mon, day, hour, min, sec, usec 인수에 nil을 지정하면 각 인수가 가질 수 있는 가장 작은 값이 대입됩니다.
+
+@param year 년도를 정수나 문자열로 지정합니다.예를 들어 1998년은 1998로 지정합니다.
+#@until 1.9.1
+            단 년도를 2자리나 3자리 정수로 지정하는 경우 0에서 38까지는 2000년대의 뒤 2자리를 의미합니다.
+            69부터 138까지는 1900에 지정된 수를 더한 년도를 의미합니다.
+#@end
+
+@param mon 1(1월)부터 12(12월) 사이의 값을 정수나 문자열로 지정합니다.
+           "Jan", "Feb", ... 과 같은 월을 나타내는 영어단어도 지정할 수 있습니다. 이 때 대소문자는 구분하지 않습니다.
+
+@param  day 일을 1부터 31 사이의 정수나 문자열로 지정합니다.
+
+@param  hour 시간을 0부터 23 사이의 정수나 문자열로 지정합니다.
+
+@param  min 분을 0부터 59 사이의 정수나 문자열로 지정합니다.
+
+@param  sec 초를 0부터 60 사이의 정수나 문자열로 지정합니다.(60은 윤초)
+
+@param  usec 마이크로 초를 정수나 문자열로 지정합니다.
+
+@raise ArgumentError 주어진 각 인수의 범위가 올바르지 않을 때 발생합니다.
+
+  p Time.gm(2000, 1, 1)  #=> Sat Jan 01 00:00:00 UTC 2000
+
+--- gm(sec, min, hour, mday, mon, year, wday, yday, isdst, zone)     -> Time
+--- utc(sec, min, hour, mday, mon, year, wday, yday, isdst, zone)    -> Time
+
+주어진 인수들에 따라 협정 세계시를 기준으로 한 Time 객체를 리턴합니다.
+
+인수의 순서는 [[m:Time#to_a]] 메소드의 결과와 같습니다.
+wday, yday, zone 인수에 지정된 값은 무시됩니다.
+각 인수에 nil을 지정하면 그 인수가 가질 수 있는 가장 작은 값을 가집니다.
+
+@param  sec 초를 0부터 60 사이의 정수나 문자열로 지정합니다.(60은 윤초)
+
+@param  min 분을 0부터 59 사이의 정수나 문자열로 지정합니다.
+
+@param  hour 시간을 0부터 23 사이의 정수나 문자열로 지정합니다.
+
+@param  mday 일을 1부터 31 사이의 정수나 문자열로 지정합니다.
+
+@param mon 1(1월)부터 12(12월) 사이의 값을 정수나 문자열로 지정합니다.
+           "Jan", "Feb", ... 과 같은 월을 나타내는 영어단어도 지정할 수 있습니다. 이 때 대소문자는 구분하지 않습니다.
+
+@param year 년도를 정수나 문자열로 지정합니다.예를 들어 1998년은 1998로 지정합니다.
+#@until 1.9.1
+            단 년도를 2자리나 3자리 정수로 지정하는 경우 0에서 38까지는 2000년대의 뒤 2자리를 의미합니다.
+            69부터 138까지는 1900에 지정된 수를 더한 년도를 의미합니다.
+#@end
+
+@param wday 사용되지 않습니다.
+
+@param yday 사용되지 않습니다.
+
+@param isdst 지정된 시각이 일광 절약 시간제(Daylight Saving Time)를 따르면 true를 리턴합니다.
+             그렇지 않으면 false를 리턴합니다.
+
+@param zone 사용되지 않습니다.
+
+@raise ArgumentError 주어진 각 인수의 범위가 올바르지 않을 때 발생합니다.
+
+--- local(year, mon = 1, day = 1, hour = 0, min = 0, sec = 0, usec = 0)      -> Time
+--- mktime(year, mon = 1, day = 1, hour = 0, min = 0, sec = 0, usec = 0)     -> Time
+
+주어진 인수들에 따라 지방시를 기준으로 한 Time 객체를 리턴합니다.
+
+mon, day, hour, min, sec, usec 인수에 nil을 지정하면 각 인수가 가질 수 있는 가장 작은 값이 대입됩니다.
+
+@param year 년도를 정수나 문자열로 지정합니다.예를 들어 1998년은 1998로 지정합니다.
+#@until 1.9.1
+            단 년도를 2자리나 3자리 정수로 지정하는 경우 0에서 38까지는 2000년대의 뒤 2자리를 의미합니다.
+            69부터 138까지는 1900에 지정된 수를 더한 년도를 의미합니다.
+#@end
+
+@param mon 1(1월)부터 12(12월) 사이의 값을 정수나 문자열로 지정합니다.
+           "Jan", "Feb", ... 과 같은 월을 나타내는 영어단어도 지정할 수 있습니다. 이 때 대소문자는 구분하지 않습니다.
+
+@param  day 일을 1부터 31 사이의 정수나 문자열로 지정합니다.
+
+@param  hour 시간을 0부터 23 사이의 정수나 문자열로 지정합니다.
+
+@param  min 분을 0부터 59 사이의 정수나 문자열로 지정합니다.
+
+@param  sec 초를 0부터 60 사이의 정수나 문자열로 지정합니다.(60은 윤초)
+
+@param  usec 마이크로 초를 정수나 문자열로 지정합니다.
+
+@raise ArgumentError 주어진 각 인수의 범위가 올바르지 않을 때 발생합니다.
+
+ p Time.local(2000, 1, 1) #=> Sat Jan 01 00:00:00 +0900 2000
+
+--- local(sec, min, hour, mday, mon, year, wday, yday, isdst, zone)     -> Time
+--- mktime(sec, min, hour, mday, mon, year, wday, yday, isdst, zone)    -> Time
+
+주어진 인수들에 따라 지방시를 기준으로 한 Time 객체를 리턴합니다.
+
+인수의 순서는 [[m:Time#to_a]] 메소드의 결과와 같습니다.
+wday, yday, zone 인수에 지정된 값은 무시됩니다.
+각 인수에 nil을 지정하면 그 인수가 가질 수 있는 가장 작은 값을 가집니다.
+
+@param  sec 초를 0부터 60 사이의 정수나 문자열로 지정합니다.(60은 윤초)
+
+@param  min 분을 0부터 59 사이의 정수나 문자열로 지정합니다.
+
+@param  hour 시간을 0부터 23 사이의 정수나 문자열로 지정합니다.
+
+@param  mday 일을 1부터 31 사이의 정수나 문자열로 지정합니다.
+
+@param mon 1(1월)부터 12(12월) 사이의 값을 정수나 문자열로 지정합니다.
+           "Jan", "Feb", ... 과 같은 월을 나타내는 영어단어도 지정할 수 있습니다. 이 때 대소문자는 구분하지 않습니다.
+
+@param year 년도를 정수나 문자열로 지정합니다.예를 들어 1998년은 1998로 지정합니다.
+#@until 1.9.1
+            단 년도를 2자리나 3자리 정수로 지정하는 경우 0에서 38까지는 2000년대의 뒤 2자리를 의미합니다.
+            69부터 138까지는 1900에 지정된 수를 더한 년도를 의미합니다.
+#@end
+
+@param wday 사용되지 않습니다.
+
+@param yday 사용되지 않습니다.
+
+@param isdst 지정된 시각이 일광 절약 시간제(Daylight Saving Time)를 따르면 true를 리턴합니다.
+             그렇지 않으면 false를 리턴합니다.
+
+@param zone 사용되지 않습니다.
+
+@raise ArgumentError 주어진 각 인수의 범위가 올바르지 않을 때 발생합니다.
+
+--- new    -> Time
+--- now    -> Time
+
+현재 시각를 가진 Time 객체를 리턴합니다.
+타임존은 지방시를 기준으로 합니다.
+
+#@since 1.9.2
+--- new(year, mon = nil, day = nil, hour = nil, min = nil, sec = nil, utc_offset = nil)    -> Time
+
+주어진 인수들에 따라 지방시를 기준으로 한 Time 객체를 리턴합니다.
+
+mon, day, hour, min, sec 인수에 nil을 지정하면 각 인수가 가질 수 있는 가장 작은 값을 가집니다.
+utc_offset에 nil을 지정하면 현재 타임존에 타임존을 따릅니다.
+
+@param year 년도를 정수나 문자열로 지정합니다.예를 들어 1998년은 1998로 지정합니다.
+
+@param mon 1(1월)부터 12(12월) 사이의 값을 정수나 문자열로 지정합니다.
+           "Jan", "Feb", ... 과 같은 월을 나타내는 영어단어도 사용할 수 있습니다. 이 때 대소문자는 구분하지 않습니다.
+
+@param  day 일을 1부터 31 사이의 정수나 문자열로 지정합니다.
+
+@param  hour 시간을 0부터 23 사이의 정수나 문자열로 지정합니다.
+
+@param  min 분을 0부터 59 사이의 정수나 문자열로 지정합니다.
+
+@param  sec 초를 0부터 60 사이의 정수나 문자열로 지정합니다.(60은 윤초)
+
+@param  utc_offset 협정 세계시와의 시간 차이를 초를 단위로한 정수나 
+                   "+HH:MM" "-HH:MM" 형식을 가진 문자열로 지정합니다.
+
+@raise ArgumentError 주어진 각 인수의 범위가 올바르지 않을 때 발생합니다.
+
+  p Time.new(2008, 6, 21, 13, 30, 0, "+09:00") #=> 2008-06-21 13:30:00 +0900
+#@end
+
+#@until 1.9.1
+--- times    -> Struct::Tms
+
+이 메소드는 더 이상 사용되지 않습니다.
+
+自身のプロセスとその子プロセスが消費したユーザ/システム CPU
+時間の積算を [[c:Struct::Tms]] のオブジェクトとして返します。
+Struct::Tms は以下のメンバを持つ構造体クラスです。
+
+ * utime           # user time
+ * stime           # system time
+ * cutime          # user time of children
+ * cstime          # system time of children
+
+시간은 초를 단위로 하며 부동소수점을 사용합니다. @@@자세한 사항은
+[[man:times(3)]]를 참조해주세요.
+
+이 메소드는 [[m:Process.#times]]으로 옮겨졌습니다.Time.times도 사용할 수 있지만
+경고 메시지가 출력됩니다.
+#@end
+
+
+== Instance Methods
+
+--- +(other)    -> Time
+
+self보다 other 초만큼 뒤의 시각을 리턴합니다.
+
+@param other self에서 경과한 시간을 초단위로 지정합니다.
+
+  t = Time.now         #=> Wed Apr 09 08:56:03 CDT 2003
+  t + (60 * 60 * 24)   #=> Thu Apr 10 08:56:03 CDT 2003
+
+--- -(time)    -> Float
+
+self와 time의 차이를 [[c:Float]] 객체로 리턴합니다.단위는 초입니다.
+
+@param time self와 차이를 계산하고 싶은 Time 객체를 지정합니다.
+
+  t = Time.now       #=> Wed Apr 09 08:56:03 CDT 2003
+  t2 = t + 2592000   #=> Fri May 09 08:56:03 CDT 2003
+  t2 - t             #=> 2592000.0
+
+--- -(sec)    -> Time
+
+self보다 sec초만큼 이전의 시각을 리턴합니다.
+
+@param sec 초를 단위로한 숫자를 지정합니다.
+
+  t = Time.now       #=> Wed Apr 09 08:56:03 CDT 2003
+  t2 = t + 2592000   #=> Fri May 09 08:56:03 CDT 2003
+  t2 - 2592000       #=> Wed Apr 09 08:56:03 CDT 2003
+
+--- <=>(other) -> -1 | 0 | 1 | nil
+
+self와 other의 시각 비교합니다.self가 크면 1을 리턴하고, 같으면 0,
+작으면 -1을 리턴합니다.비교가 불가능하면 nil을 리턴합니다.
+
+#@since 1.8.0
+@param other self와 비교하고 싶은 Time 객체를 지정합니다.
+#@else
+@param other self와 비교하고 싶은 Time 객체나 숫자를 지정합니다.
+             숫자가 지정된 경우엔 기준 시각으로부터 경과한 초로 계산해서 self와 비교합니다.
+#@end
+
+--- eql?(other)    -> bool
+
+other가 Time 클래스나 서브 클래스의 인스턴스이면서 self와 같은 시각을 가지고 있으면
+true를 리턴합니다.그렇지 않으면 false를 리턴합니다.
+
+@param other self와 비교하려는 시각을 Time 객체로 지정합니다.
+
+--- asctime    -> String
+--- ctime      -> String
+
+시각을 [[man:asctime(3)]] 형식에 따라는 문자열로 변환합니다.단 맨 뒤에 줄바꿈 문자 "\n"은 포함되지 않습니다.
+
+#@since 1.9.1
+#@since 2.0.0
+리턴값의 문자 인코딩은 [[m:Encoding::US_ASCII]]입니다.
+#else
+리턴값의 문자 인코딩은 [[m:Encoding::ASCII_8BIT]]입니다.
+#@end
+#@end
+
+--- gmt?-> bool
+--- utc?-> bool
+
+self의 타임존이 협정 세계시로 설정되어있으면 true를 리턴합니다.
+
+#@since 1.8.0
+--- getgm     -> Time
+--- getutc    -> Time
+
+협정 세계시를 타임존으로 하는 Time 객체를 리턴합니다.
+
+  t = Time.local(2000,1,1,20,15,1)   #=> Sat Jan 01 20:15:01 CST 2000
+  t.gmt?#=> false
+  y = t.getgm                        #=> Sun Jan 02 02:15:01 UTC 2000
+  y.gmt?#=> true
+  t == y                             #=> true
+
+#@end
+
+#@since 1.8.0
+--- getlocal     -> Time
+
+지방시를 타임존으로 하는 Time 객체를 리턴합니다.
+
+  t = Time.gm(2000,1,1,20,15,1)   #=> Sat Jan 01 20:15:01 UTC 2000
+  t.gmt?#=> true
+  l = t.getlocal                  #=> Sat Jan 01 14:15:01 CST 2000
+  l.gmt?#=> false
+  t == l                          #=> true
+
+#@end
+
+--- gmtime    -> self
+--- utc       -> self
+
+타임존을 협정 세계시로 설정합니다.
+
+이 메소드
+
+[[m:Time#localtime]], [[m:Time#gmtime]] の挙動はシステムの
+[[man:localtime(3)]] の挙動に依存します。Time クラ
+スでは時刻を起算時からの経過秒数として保持していますが、ある特定の
+時刻までの経過秒は、システムがうるう秒を勘定するかどうかによって異
+なる場合があります。システムを越えて Time オブジェクトを受け
+渡す場合には注意する必要があります。
+
+  t = Time.now   #=> Wed Apr 09 08:56:03 CDT 2003
+  t.gmt?#=> false
+  t.gmtime       #=> Wed Apr 09 13:56:03 UTC 2003
+  t.gmt?#=> true
+
+--- localtime     -> self
+
+타임존을 지방시로 설정합니다.
+
+このメソッドを呼び出した後は時刻変換を協定地方時として行ないます。
+
+[[m:Time#localtime]], [[m:Time#gmtime]] の挙動はシステムの
+[[man:localtime(3)]] の挙動に依存します。Time クラ
+スでは時刻を起算時からの経過秒数として保持していますが、ある特定の
+時刻までの経過秒は、システムがうるう秒を勘定するかどうかによって異
+なる場合があります。システムを越えて Time オブジェクトを受け
+渡す場合には注意する必要があります。
+
+  t = Time.gm(2000, "jan", 1, 20, 15, 1)
+  t.gmt?#=> true
+  t.localtime   #=> Sat Jan 01 14:15:01 CST 2000
+  t.gmt?#=> false
+
+--- strftime(format)    -> String
+
+format 문자열 형식으로 시각을 문자열로 변환합니다.
+
+@param format 형식(포맷) 문자열을 지정합니다.사용할 수 있는 문자는 다음과 같습니다.
+
+#@since 1.9.1
+  * %A: 요일의 이름(Sunday, Monday ... )
+  * %a: 요일의 줄임말(Sun, Mon ... )
+  * %B: 월 이름(January, February ... )
+  * %b: 월 이름의 줄임말(Jan, Feb ... )
+  * %C: 세기 (2009년이면 20)
+  * %c: 날짜와 시각
+  * %D: 날짜 (%m/%d/%y)
+  * %d: 일(01-31)
+  * %e: 일.한 자리 숫자이면 공백을 넣어서 채웁니다.
+  * %F: %Y-%m-%d와 같음. (ISO 8601의 날짜 포맷)
+  * %H: 24시간을 기준으로한 시(00-23)
+  * %h: %b와 같음
+  * %I: 12시간을 기준으로 한 시(01-12)
+  * %j: 1년의 시점을 기준으로한 경과일(001-366)
+  * %k: 24시간을 기준으로 한 시한 자리 숫자이면 공백을 넣어서 채웁니다.
+  * %L: 밀리초 (000.999)
+  * %l: 12시간을 기준으로한 시한 자리 숫자이면 공백을 넣어서 채웁니다.
+  * %M: 분(00-59)
+  * %m: 월을 나타내는 숫자(01-12)
+  * %n: 줄바꿈 (\n)
+  * %N: 초의 소수점 아래 부분.자리 수 지정이 없으면 나노초, %6N: 마이크로 초(6자리), %3N: 밀리초(3자리)
+  * %P: 오전/오후 소문자(am,pm)
+  * %p: 오전/오후 대문자(AM,PM)
+  * %R: 24시간을 기준으로 한 시각%H:%M과 같음.
+  * %r: 12시간을 기준으로 한 시각%I:%M:%S %p과 같음.
+  * %S: 초(00-60) (60는 윤초)
+  * %s: 1970-01-01 00:00:00 UTC로부터 경과한 초
+  * %T: 24시간을 기준으로 한 시각%H:%M:%S과 같음  * %t: 탭 문자 (\t)
+  * %U: 주를 나타내는 수첫 일요일이 첫번째 주의 시작(00-53)
+  * %u: 월요일=1을 기준으로 한 요일을 나타내는 숫자 (1..7)
+  * %v: VMS 형식의 날짜(%e-%b-%Y)
+   (01..53)
+  * %W: 주를 나타내는 숫자첫 일요일이 첫번째 주의 시작(00-53)
+  * %w: 요일을 나타내는 숫자일요일이 0(0-6)
+  * %X: 시각
+  * %x: 날짜
+  * %Y: 서기를 기준으로한 년도
+  * %y: 서기를 기준으로 한 년도 2자리(00-99)
+  * %Z: 타임존
+#@#  * %Z: 타임존  [[unknown:trap|trap::Time]]
+  * %z: 타임존.UTC를 기준으로 한 차이 (예 +0900)
+#@since 1.9.3
+  * %:z: 타임존UTC를 기준으로한 차이. ":"을 포함 (예 +09:00)
+  * %::z: 타임존.UTC를 기준으로 한 차이. ":"을 포함하고, 초단위까지 포함 (예 +09:00:00)
+#@end
+  * %%: %自身
+#@else
+  * %A: 요일의 이름(Sunday, Monday ... )
+  * %a: 요일의 줄임말(Sun, Mon ... )
+  * %B: 월 이름(January, February ... )
+  * %b: 월 이름의 줄임말(Jan, Feb ... )
+  * %c: 날짜와 시각
+  * %d: 일(01-31)
+  * %H: 24시간을 기준으로한 시(00-23)
+  * %I: 12시간을 기준으로 한 시(01-12)
+  * %j: 1년의 시점을 기준으로한 경과일(001-366)
+  * %M: 분(00-59)
+  * %m: 월을 나타내는 숫자(01-12)
+  * %p: 오전/오후 대문자(AM,PM)
+  * %S: 초(00-60) (60는 윤초)
+  * %U: 주를 나타내는 수첫 일요일이 첫번째 주의 시작(00-53)
+  * %W: 주를 나타내는 숫자첫 일요일이 첫번째 주의 시작(00-53)
+  * %w: 요일을 나타내는 숫자일요일이 0(0-6)
+  * %X: 시각
+  * %x: 날짜
+  * %Y: 서기를 기준으로한 년도
+  * %y: 서기를 기준으로 한 년도 2자리(00-99)
+  * %Z: 타임존
+#@#  * %Z: 타임존  [[unknown:trap|trap::Time]]
+  * %%: %自身
+#@end
+
+#@since 1.9.1
+이 메소드는 [[man:strftime(3)]]과 glibc을 참고로 만들어졌으며 아래의 옵션을 사용할 수 있습니다.
+  * ^: 대문자로 출력합니다.
+  * #: 소문자는 대문자로 바꾸고, 대문자는 소문자로 바꿉니다.
+  * -: 0이나 공백으로 빈 부분을 채우지 않고 왼쪽으로 정렬합니다.
+  * _: 공백으로 채웁니다.
+  * 0: 0으로 채웁니다.
+  * 수치: 각 형식의 자리수를 지정합니다.
+
+  t = Time.now                         #=> 2010-09-05 15:41:17 0900
+  t.strftime("Printed on %m/%d/%Y")    #=> "Printed on 09/05/2010"
+  t.strftime("Printed on %m/%-d/%_6Y") #=> "Printed on 09/5/  2010"
+  t.strftime("at %I:%M%p")             #=> "at 03:41PM"
+  t.strftime("at %I:%M%#p")            #=> "at 03:41pm"
+#@else
+이 메소드는 각 시스템의 [[man:strftime(3)]]
+을 그대로 사용하고 있습니다.따라서 위에 열거한 문자 이외에 사용가능한
+문자가 있을 수도 있습니다.단 위에 열거된 문자 이외의 형식 문자를 사용하면
+프로그램의 이식성이 떨어질 수 있으므로 주의가 필요합니다.
+
+  t = Time.now
+  t.strftime("Printed on %m/%d/%Y")   #=> "Printed on 04/09/2003"
+  t.strftime("at %I:%M%p")            #=> "at 08:56AM"
+#@end
+
+--- sec    -> Integer
+
+초를 정수로 리턴합니다.
+
+  Time.mktime(2000, 1, 1).sec #=> 0
+
+일반적으로 0에서 59 사이의 숫자를 리턴하면 윤초이면 60을 리턴합니다.
+
+  ENV['TZ'] = 'right/UTC'
+  Time.mktime(2005, 12, 31, 23, 59, 60).sec #=> 60
+
+--- min    -> Integer
+
+분을 정수로 리턴합니다.
+
+--- hour    -> Integer
+
+시간을 정수로 리턴합니다.
+
+--- mday    -> Integer
+--- day     -> Integer
+
+일을 정수로 리턴합니다.
+
+  p Time.local(2000, 1, 1).day #=> 1
+
+--- mon      -> Integer
+--- month    -> Integer
+
+월을 정수로 리턴합니다.
+
+  p Time.local(2000, 1, 1).month #=> 1
+
+--- year    -> Integer
+
+년을 정수로 리턴합니다.
+
+  p Time.local(2000, 1, 1).year #=> 2000
+
+--- wday    -> Integer
+
+요일을 0(일요일)에서 6(토요일) 사이의 정수로 리턴합니다.
+
+--- yday    -> Integer
+
+1월 1일=1을 기준으로 해서 계산한 경과일수를 1부터 366사이의 정수로 리턴합니다.
+
+  Time.mktime(2000,  1,  1).yday #=> 1
+
+윤년이면 2월 29일도 포함해서 경과일수를 계산합니다.
+
+  # 윤년이 아닌 예
+  Time.mktime(2003,  1,  1).yday #=> 1
+  Time.mktime(2003,  3,  1).yday #=> 60
+  Time.mktime(2003, 12, 31).yday #=> 365
+  
+  # 윤년
+  Time.mktime(2004,  1,  1).yday #=> 1
+  Time.mktime(2004,  2, 29).yday #=> 60
+  Time.mktime(2004, 12, 31).yday #=> 366
+
+--- isdst    -> bool
+--- dst?-> bool
+
+self의 시각이 일광 절약 시간제를 따르면 true를 리턴합니다.그렇지 않으면 false를 리턴합니다.
+
+  ENV['TZ'] = 'US/Pacific'
+  Time.local(2000, 7, 1).isdst   #=> true
+  Time.local(2000, 1, 1).isdst   #=> false
+
+--- zone    -> String
+
+타임존을 나타내는 문자열을 리턴합니다.
+
+ p Time.now.zone #=> "JST"
+
+#@since 1.8.0
+--- succ    -> Time
+
+self에 1초를 더한 Time 객체를 리턴합니다.
+#@until 1.8.6
+타임존은 지방시를 기준으로 합니다.
+#@end
+
+#@since 1.9.2
+이 메소드는 더 이상 사용되지 않습니다. self + 1을 대신 사용해주세요.
+#@end
+
+  t = Time.now
+  p t
+  p t.succ
+  # => Sun Jul 18 01:41:22 JST 2004
+       Sun Jul 18 01:41:23 JST 2004
+
+#@end
+
+--- utc_offset     -> Integer
+--- gmt_offset     -> Integer
+--- gmtoff         -> Integer
+
+협정 세계시와의 차이를 초 단위로 계산한 숫자를 리턴합니다.
+
+오스트레일리아나 아시아처럼 지방시가 협정 세계시보다 경우엔 양수를 리턴하고
+아메리카 대륙과 같이 느린 경우엔 음수를 리턴합니다.
+
+  p Time.now.zone  # => "JST"
+  p Time.now.utc_offset
+  # => 32400
+
+타임존이 협정 세계시로 설정되어 있으면 0을 리턴합니다.
+
+  p Time.now.zone  # => "JST"
+  p Time.now.getgm.utc_offset
+  # => 0
+
+--- to_a     -> Array
+
+시각을 10개의 요소를 가진 배열로 리턴합니다.
+
+요소의 순서는 아래와 같습니다.
+
+  * sec:   초 (정수 0-60) (60는 윤초)
+  * min:   분 (정수 0-59)
+  * hour:  시 (정수 0-23)
+  * mday:  일 (정수)
+  * mon:   월 (정수 1-12)
+  * year:  년 (정수 2000년=2000)
+  * wday:  요일 (정수 0-6)
+  * yday:  1년을 기준으로한 경과일 (정수 1-366)
+  * isdst: 일광 절약 시간제를 따르는지 여부 (true/false)
+  * zone:  타임존 (문자열)
+
+  p Time.now      # => Mon Oct 20 06:02:10 JST 2003
+  p Time.now.to_a # => [10, 2, 6, 20, 10, 2003, 1, 293, false, "JST"]
+
+이 순서는 C 언어의 tm 순서에 따릅니다.단 tm 구조체에는 zone이 포함되어 있지 않습니다.
+
+C 언어의 tm 구조체와 달리 month가 1월이면 1을 리턴하고,
+year가 1998년이면 1998을 리턴합니다.그리고 yday는 1부터 헤아립니다.
+
+--- to_f    -> Float
+
+기준 시각으로부터 경과한 초를 Float 객체로 리턴합니다.1초보다 작은 시간도 표현할 수 있습니다.
+
+  t = Time.now
+  "%10.5f" % t.to_f   #=> "1049896564.13654"
+  t.to_i              #=> 1049896564
+
+#@since 1.9.2
+--- to_r    -> Rational
+
+기준 시각으로부터 경과한 초를 유리수로 리턴합니다.1초보다 작은 시간도 표현할 수 있습니다.
+
+  t = Time.now
+  p t.to_r     # => (8807170717088293/8388608)
+
+#@end
+--- to_i      -> Integer
+--- tv_sec    -> Integer
+
+기준 시각으로부터 경과한 초를 정수로 리턴합니다.
+
+--- to_s     -> String
+
+시각을 [[man:date(1)]] 형식의 문자열로 변환합니다.
+
+  self.strftime("%a %b %d %H:%M:%S %Z %Y")
+
+와 같습니다.
+
+  p Time.now.to_s # => "Mon Oct 20 06:02:10 JST 2003"
+
+#@since 1.9.1
+#@since 2.0.0
+리턴값의 문자 인코딩은 [[m:Encoding::US_ASCII]]입니다.
+#else
+리턴값의 문자 인코딩은 [[m:Encoding::ASCII_8BIT]]입니다.
+#@end
+#@end
+
+--- usec         -> Integer
+--- tv_usec      -> Integer
+
+마이크로 초를 정수로 리턴합니다.
+
+#@since 1.9.1
+
+--- friday?-> bool
+
+self의 시각이 금요일이면 true를 리턴합니다.
+그렇지 않으면 false를 리턴합니다.
+
+--- monday?-> bool
+
+self의 시각이 월요일이면 true를 리턴합니다.
+그렇지 않으면 false를 리턴합니다.
+
+--- saturday?-> bool
+
+self의 시각이 토요일이면 true를 리턴합니다.
+그렇지 않으면 false를 리턴합니다.
+
+--- sunday?-> bool
+
+self의 시각이 일요일이면 true를 리턴합니다.
+그렇지 않으면 false를 리턴합니다.
+
+   t = Time.now   #=> Sun Oct 23 00:14:54 UTC 2005
+   t.sunday?#=> true
+
+--- thursday?-> bool
+
+self의 시각이 목요일이면 true를 리턴합니다.
+그렇지 않으면 false를 리턴합니다.
+
+--- tuesday?-> bool
+
+self의 시각이 화요일이면 true를 리턴합니다.
+그렇지 않으면 false를 리턴합니다.
+
+--- wednesday?-> bool
+
+self의 시각이 수요일이면 true를 리턴합니다.
+그렇지 않으면 false를 리턴합니다.
+
+--- nsec    -> Integer
+--- tv_nsec -> Integer
+
+나노 초를 정수로 리턴합니다.
+
+   t = Time.now        #=> 2007-11-17 15:18:03 +0900
+   "%10.9f" % t.to_f   #=> "1195280283.536151409"
+   t.nsec              #=> 536151406
+
+IEEE 754 浮動小数点数で表現できる精度が違うため、[[m:Time#to_f]]の最小
+の桁とnsecの最小の桁は異なります。nsecで表される値の方が正確です。
+
+#@end
+#@since 1.9.2
+--- round(ndigits=0) -> Time
+
+十進小数点数で指定した桁数の精度で丸めをし、
+その [[c:Time]] オブジェクト返します。
+(デフォルトは0、つまり小数点の所で丸めます)。
+
+ndigits には 0 以上の整数を渡します。
+
+@param ndigits 十進での精度(桁数)
+
+    require 'time'
+
+    t = Time.utc(1999,12,31, 23,59,59)
+    p((t + 0.4).round.iso8601(3))    #=> "1999-12-31T23:59:59.000Z"
+    p((t + 0.49).round.iso8601(3))   #=> "1999-12-31T23:59:59.000Z"
+    p((t + 0.5).round.iso8601(3))    #=> "2000-01-01T00:00:00.000Z"
+    p((t + 1.4).round.iso8601(3))    #=> "2000-01-01T00:00:00.000Z"
+    p((t + 1.49).round.iso8601(3))   #=> "2000-01-01T00:00:00.000Z"
+    p((t + 1.5).round.iso8601(3))    #=> "2000-01-01T00:00:01.000Z"
+
+    t = Time.utc(1999,12,31, 23,59,59)
+    p (t + 0.123456789).round(4).iso8601(6)  #=> "1999-12-31T23:59:59.123500Z"
+
+--- subsec -> Integer | Rational
+
+時刻を表す分数を返します。
+
+[[c:Rational]] を返す場合があります。
+
+   t = Time.now        #=> 2009-03-26 22:33:12 +0900
+   "%10.9f" % t.to_f   #=> "1238074392.940563917"
+   t.subsec            #=> (94056401/100000000)
+
+to_f の値と subsec の値の下のほうの桁の値は異なる場合があります。
+というのは IEEE 754 double はそれを表すのに十分な精度を
+持たないからです。subsec で得られる値が正確です。
+
+#@end

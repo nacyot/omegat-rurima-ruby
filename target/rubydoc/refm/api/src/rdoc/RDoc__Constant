@@ -1,0 +1,5 @@
+= class RDoc::Constant < RDoc::CodeObject
+
+定数を表現するクラスです。
+
+라이브러리 내부에서 사용합니다.

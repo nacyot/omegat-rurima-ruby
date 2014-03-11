@@ -1,0 +1,17 @@
+= class ScriptError < Exception
+
+스크립트 에러를 나타내는 예외 클래스입니다.
+
+아래 열거된 클래스들의 부모 클래스입니다.
+
+#@# list child classes automatically
+  * [[c:LoadError]]
+#@since 1.9.1
+  * [[c:NameError]]
+  * [[c:NoMethodError]]
+#@end
+  * [[c:NotImplementedError]]
+  * [[c:SyntaxError]]
+
+위의 예외가 발생한 경우엔 Ruby 스크립트에
+버그가 있을 가능성이 높습니다.

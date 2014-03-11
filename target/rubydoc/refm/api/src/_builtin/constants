@@ -1,0 +1,300 @@
+#@#== Constants
+
+--- TRUE -> TrueClass
+더 이상 사용하지 않습니다.참을 나타내는 상수이며true와 같습니다.
+
+이 상수는 과거 버전과의 호환성 때문에 지원하고 있으므로true를 대신 사용해주세요.
+
+Ruby에선 false와 nil만이 거짓으로 사용됩니다.
+거짓이 아닌 값은 모든 참으로 다뤄집니다.
+
+--- FALSE -> FalseClass
+더 이상 사용하지 않습니다.거짓을 나타내는 상수이며false와 같습니다.
+
+이 상수는 과거 버전과의 호환성 때문에 지원하고 있으므로false를 대신 사용해주세요.
+Ruby에선 false와 nil만이 거짓으로 사용됩니다.
+거짓이 아닌 값은 모든 참으로 다뤄집니다.
+
+--- NIL -> NilClass
+더 이상 사용하지 않습니다. nil과 같습니다.
+
+이 상수는 과거 버전과의 호환성 때문에 지원하고 있으므로nil을 사용해주세요.
+
+Ruby에선 false와 nil만이 거짓으로 사용됩니다.
+거짓이 아닌 값은 모든 참으로 다뤄집니다.
+
+--- STDIN -> IO
+표준입력[[m:$stdin]]의 기본 설정값. [[m:$stdin]]도 참조해주세요.
+
+STDIN은 ruby 프로세스가 시작되는 시점의 표준입력을 나타냅니다.
+ruby가 시작될 때 [[m:$stdin]]도 같은 값으로 초기화됩니다.
+
+[[m:$stdin]]에 다른 입력 객체를 대입해서 간단히 리다이렉트할 수 있습니다.
+거꾸로 [[m:$stdin]]에 STDIN를 대입해서 원상 복귀시킬 수도 있습니다.
+
+==== 주의사항
+STDIN는 ruby 프로세스가 시작될 때의 표준입력입니다.
+「システムにおける標準の入力ストリーム」とは異なります。
+
+多くのシステムでは標準の入力ストリームは端末です。
+ruby 自体が他のストリームに向けて入力をリダイレクトされた状態で起動された場合、
+STDIN が保持するのは端末ではなく、リダイレクト先のストリームです。
+
+--- STDOUT -> IO
+표준 출력[[m:$stdout]]의 기본 설정값[[m:$stdout]]도 참조해주세요.
+
+STDOUT은 ruby 프로세스가 시작되는 시점의 표준출력을 나타냅니다.
+ruby가 시작될 때 [[m:$stdout]]도 같은 값으로 초기화됩니다.
+
+[[m:$stdout]]에 다른 출력 객체를 대입해서 간단히 리다이렉트할 수 있습니다.
+거꾸로 [[m:$stdin]]에 STDIN를 대입해서 원상 복귀시킬 수도 있습니다.
+
+==== 주의사항
+STDOUT는 ruby 프로세스가 시작될 때의 표준출력입니다.
+「システムにおける標準の出力ストリーム」とは異なります。
+
+多くのシステムでは標準の出力ストリームは端末です。
+ruby 自体が他のストリームに向けて出力をリダイレクトされた状態で起動された場合、
+STDOUT が保持するのは端末ではなく、リダイレクト先のストリームです。
+
+
+--- STDERR -> IO
+표준 에러 출력[[m:$stderr]]의 기본 설정값[[m:$stderr]]도 참조해주세요.
+
+STDERR은 ruby 프로세스가 시작되는 시점의 표준에러출력을 나타냅니다.
+ruby가 시작될 때 [[m:$stderr]]도 같은 값으로 초기화됩니다.
+
+[[m:$stderr]]에 다른 출력 객체를 대입해서 간단히 리다이렉트할 수 있습니다.
+거꾸로 [[m:$stderr]]에 STDERR를 대입해서 원상 복귀시킬 수도 있습니다.
+
+==== 주의사항
+STDERR는 ruby 프로세스가 시작될 때의 표준출력입니다.
+「システムにおける標準のエラー出力ストリーム」とは異なります。
+
+多くのシステムでは標準のエラー出力ストリームは端末です。
+ruby 自体が他のストリームに向けてエラー出力をリダイレクトされた状態で起動された場合、
+STDERR が保持するのは端末ではなく、リダイレクト先のストリームです。
+
+--- ENV -> Object
+환경변수를 담은 hash와 유사한 객체입니다. (자세한 내용은 [[c:ENV]]를 참조해주세요.)
+
+이 hash의 값을 변경하면 자식 프로세스의 환경변수로도 사용됩니다.
+
+--- ARGF -> Object
+引数 (なければ標準入力) で構成される仮想ファイル
+#@since 1.9.1
+(詳細は [[c:ARGF]]、[[c:ARGF.class]] を参照)。
+
+つまり [[m:Kernel.#gets]] は [[m:ARGF.class#gets]] と同じ意味です。
+[[m:ARGF.class#file]] で現在読み込み中のファイルオブジェクトが、
+[[m:ARGF.class#filename]] で現在読み込み中のファイル名が得られます。
+#@else
+(詳細は [[c:ARGF]] を参照)。
+
+つまり [[m:Kernel.#gets]] は [[m:ARGF.gets]] と同じ意味です。[[m:ARGF.file]] で現在読み込み中のファイルオブジェクトが、
+[[m:ARGF.filename]] で現在読み込み中のファイル名が得られます。#@end
+
+--- ARGV -> Array
+Ruby スクリプトに与えられた引数を表す配列です。
+
+組み込み変数 [[m:$*]] の別名です。
+Ruby 自身に対する引数は取り除かれています。
+
+예:
+
+スクリプト argv.rb の内容が
+    p ARGV
+であったとします。このときシェルから次を実行すると、
+    $ ruby argv.rb foo bar baz
+結果は以下のように出力されます。    ["foo", "bar", "baz"]
+
+--- DATA -> File
+スクリプトの __END__
+プログラムの終り以降をアクセスする [[c:File]] オブジェクト。
+
+[[ref:d:spec/program#terminate]]も参照。
+
+ソースファイルの __END__ 以降は解析・実行の対象にならないので
+その部分にプログラムが利用するためのデータを書き込んでおくことができます。
+DATA 定数はそのデータ部分にアクセスするための [[c:File]] オブジェクトを保持しています。
+
+__END__ を含まないプログラムにおいては DATA は定義されません。
+
+==== 주의
+
+    * DATA.rewind で移動する読みとり位置は __END__ 直後ではなく、
+      スクリプトファイルの先頭です。    * スクリプトが標準入力から読みこまれた場合は標準入力になります。    * スクリプトがファイルや標準入力から読みこまれなかった場合や、
+      __END__ で終っていない場合には定義されません。    * [[m:Kernel.#require]] や [[m:Kernel.#load]] で
+      読み込まれたファイルの中であってもそのファイル (__FILE__, [[ref:d:spec/variables#pseudo]])
+      ではなく実行されたファイル ([[m:$0]]) を指します。
+
+==== 例1
+    print DATA.gets # => 故人西辞黄鶴楼
+    print DATA.gets # => 烟花三月下揚州
+    print DATA.gets # => 孤帆遠影碧空尽
+    print DATA.gets # => 唯見長江天際流
+    DATA.gets       # => nil
+    
+    __END__
+    故人西辞黄鶴楼
+    烟花三月下揚州
+    孤帆遠影碧空尽
+    唯見長江天際流
+
+==== 例2
+    sum = 0
+    DATA.each_line do |line|
+      sum += line.to_i
+    end
+    
+    DATA.rewind
+    p DATA.gets    # => "sum = 0¥n"
+    
+    __END__
+    17
+    19
+    23
+    29
+    31
+
+==== 例3
+    DATA.gets    # => uninitialized constant DATA (NameError)
+
+==== 例4
+
+ファイル library.rb と app.rb の内容が以下であったとします。
+
+library.rb:
+    print DATA.gets
+    
+    __END__
+    data from library
+
+app.rb:
+    require 'library.rb'
+
+    __END__
+    data from app
+
+このときシェルから次を実行すると
+    $ ruby app.rb
+結果は以下のように出力されます。    data from app
+
+
+--- TOPLEVEL_BINDING -> Binding
+
+トップレベルでの [[c:Binding]] オブジェクト。
+
+詳細は [[c:Binding]] を参照してください。
+
+--- RUBY_VERSION -> String
+
+Ruby のバージョンを表す文字列。
+
+Ruby のバージョンは、major.minor.teeny という形式です。
+それぞれの番号は (今のところ) 2 桁以上にならないと約束されていますので、
+
+    if RUBY_VERSION >= '1.6.7'
+      # バージョン 1.6.7 以降で有効な処理
+    else
+      # それ以前のバージョンで有効な処理
+    end
+
+とバージョンの違いによる処理の分岐を書くことができます。
+
+Ruby 1.8 までは、minor が奇数のバージョンは開発版、
+minor が偶数のバージョンは安定版です。
+Ruby 1.9.0 以降は、teeny が 0 のバージョンが開発版となる予定です。
+
+--- RUBY_RELEASE_DATE -> String
+
+Ruby のリリース日を表す文字列。
+
+--- RUBY_PLATFORM -> String
+
+プラットフォームを表す文字列。
+
+#@since 1.8.7
+--- RUBY_COPYRIGHT -> String
+Ruby のコピーライトを表す文字列。
+
+--- RUBY_DESCRIPTION -> String
+Ruby の詳細を表す文字列。
+
+ruby -v で表示される内容が格納されています。
+
+#@end
+#@since 1.8.5
+--- RUBY_PATCHLEVEL -> Fixnum
+Ruby のパッチレベルを表す [[c:Fixnum]] オブジェクトです。
+
+パッチレベルはRubyの各バージョンに対するバグ修正パッチの適用をカウントしています。
+teeny リリースのそれぞれについてパッチレベルは 0 から始まり、
+その teeny リリースに対してバグ修正パッチが適用される度に増えていきます。
+
+パッチレベルという概念および RUBY_PATCHLEVEL 定数は、 Ruby 1.8.5-p1 以降、 1.8.6 以降で導入されました。
+1.8.5やそれ以前のバージョンでは定義されていません。
+#@end
+#@since 1.9.1
+--- RUBY_ENGINE -> String
+Ruby処理系実装の種類を表す文字列。
+
+예:
+  $ ruby-1.9.1 -ve 'p RUBY_ENGINE'
+  ruby 1.9.1p0 (2009-03-04 revision 22762) [x86_64-linux]
+  "ruby"
+  $ jruby -ve 'p RUBY_ENGINE'
+  jruby 1.2.0 (ruby 1.8.6 patchlevel 287) (2009-03-16 rev 9419) [i386-java]
+  "jruby"
+
+#@end
+#@if (version < "1.9.1")
+--- VERSION -> String
+
+더 이상 사용하지 않습니다. [[m:Object::RUBY_VERSION]]의 예전 이름입니다.
+
+이 상수는 과거 버전과의 호환성 때문에 지원하고 있으므로RUBY_VERSION를 사용해주세요.
+
+--- RELEASE_DATE -> String
+
+더 이상 사용하지 않습니다. [[m:Object::RUBY_RELEASE_DATE]]의 예전 이름입니다.
+
+이 상수는 과거 버전과의 호환성 때문에 지원하고 있으므로RUBY_RELEASE_DATE를 사용해주세요.
+
+--- PLATFORM -> String
+
+더 이상 사용하지 않습니다. [[m:Object::RUBY_PLATFORM]]의 예전 이름입니다.
+
+이 상수는 과거 버전과의 호환성 때문에 지원하고 있으므로RUBY_PLATFORM를 사용해주세요.
+#@end
+
+--- SCRIPT_LINES__ -> Hash
+
+ソースファイル別にまとめられたソースコードの各行。
+
+この定数は、デフォルトでは定義されていません。
+この定数がハッシュとして定義された後にソースが((*コンパイル*))されると、
+そのソースファイル名をキーに、
+ソースを行毎に分割した配列を値にしたハッシュ要素が設定されます。
+
+この定数はデバッガ ([[lib:debug]]) などで利用されています。
+
+なお、 [[m:$SAFE]] レベルが 0 でなければ有効にはなりません。
+また、 [[m:Kernel.#eval]] によるコンパイルは対象にはなりません。
+
+
+예:
+    require 'pp'
+    SCRIPT_LINES__ = {}
+    require 'English'
+    pp SCRIPT_LINES__
+
+    # => {"/usr/local/lib/ruby/1.6/English.rb"=>
+    #     ["alias $ERROR_INFO              $!\n",
+    #      "alias $ERROR_POSITION          $@\n",
+    #      "alias $LOADED_FEATURES         $\"\n",
+    #               :#               :
+    #               :#               :
+    #      "alias $POSTMATCH               $'\n",
+    #      "alias $LAST_PAREN_MATCH        $+\n"]}
+

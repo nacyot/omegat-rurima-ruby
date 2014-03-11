@@ -1,0 +1,72 @@
+= class FalseClass < Object
+
+false 클래스false는 FalseClass 클래스의 유일한 인스턴스입니다.
+false는 nli 객체와 같이 거짓을 나타내며
+이 두 객체 이외의 모든 객체는 참(true)입니다.
+
+
+== Instance Methods
+
+--- &(other)    -> false
+
+항상 false를 리턴합니다.
+
+@param other 論理積を行なう式です。
+
+& は再定義可能な演算子に分類されていますので、通常は false & other の形で使われます。
+
+   p false & true     #=> false
+   p false & false    #=> false
+   p false & nil      #=> false
+   p false & (1 == 1) #=> false
+   p false & (1 + 1)  #=> false
+
+   p false.&(true)    #=> false
+   p false.&(false)   #=> false
+   p false.&(nil)     #=> false
+   p false.&(1 == 1)  #=> false
+   p false.&(1 + 1)   #=> false
+
+--- |(other)    -> bool
+
+other가 참이면 true를 리턴하고 거짓이면 false를 리턴합니다.
+
+@param other 論理和を行なう式です。
+
+| は再定義可能な演算子に分類されていますので、通常は false | other の形で使われます。
+
+   p false | true     #=> true
+   p false | false    #=> false
+   p false | nil      #=> false
+   p false | (1 == 1) #=> true
+   p false | (1 + 1)  #=> true
+
+   p false.|(true)    #=> true
+   p false.|(false)   #=> false
+   p false.|(nil)     #=> false
+   p false.|(1 == 1)  #=> true
+   p false.|(1 + 1)   #=> true
+
+--- ^(other)    -> bool
+
+other가 참이면 true를 리턴하고 거짓이면 false를 리턴합니다.
+
+@param other 排他的論理和を行なう式です。
+
+^ は再定義可能な演算子に分類されていますので、通常は false ^ other の形で使われます。
+
+   p false ^ true     #=> true
+   p false ^ false    #=> false
+   p false ^ nil      #=> false
+   p false ^ (1 == 1) #=> true
+   p false ^ (1 + 1)  #=> true
+
+   p false.^(true)    #=> true
+   p false.^(false)   #=> false
+   p false.^(nil)     #=> false
+   p false.^(1 == 1)  #=> true
+   p false.^(1 + 1)   #=> true
+
+--- to_s    -> String
+
+常に文字列 "false" を返します。

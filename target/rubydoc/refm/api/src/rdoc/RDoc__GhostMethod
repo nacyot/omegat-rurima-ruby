@@ -1,0 +1,5 @@
+= class RDoc::GhostMethod < RDoc::AnyMethod
+
+コメントでのみ参照されるメソッドを表現します。
+
+라이브러리 내부에서 사용합니다.

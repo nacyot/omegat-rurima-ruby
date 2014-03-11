@@ -1,0 +1,2155 @@
+= class Array < Object
+include Enumerable
+
+배열 클래스입니다.
+배열은 임의의 Ruby 객체를 요소로 가질 수 있습니다.
+
+일반적으로 배열은 대괄호를 사용해
+
+  [1, 2, 3]
+
+와 같이 생성합니다.
+
+
+== Class Methods
+
+#@since 1.9.1
+--- try_convert(obj) -> Array | nil
+to_ary를 사용해 obj를 배열로 변환하도록 시도합니다.
+
+어떤 이유로 변환에 실패한 경우 nil을 리턴합니다.
+이 메소드는 인수가 배열인지 아닌지 확인하기 위해 사용됩니다.
+
+예:
+
+   Array.try_convert([1])   # => [1]
+   Array.try_convert("1")   # => nil
+
+   if tmp = Array.try_convert(arg)
+     # the argument is an array
+   elsif tmp = String.try_convert(arg)
+     # the argument is a string
+   end
+
+#@end
+
+--- [](*item)    -> Array
+
+인수 item을 요소로 가지는 배열을 생성합니다.
+
+[[c:Array]]의 서브 클래스를 작성할 때 그 서브 클래스의 인스턴스를 쉽게 만들기 위해 만들어졌습니다.
+
+@param item 배열의 요소를 지정합니다.
+
+예:
+
+  Array[1, 2, 3] #=> [1, 2, 3]
+  
+  class SubArray < Array
+    # ...
+  end
+  p SubArray[1, 2, 3] # => [1, 2, 3]
+
+--- new(size = 0, val = nil)    -> Array
+
+길이가 size인 배열을 생성하고 각 요소를 val로 초기화해서 리턴합니다.
+
+각 요소들에 val을 복사하는 게 아니라는 점을 주의해주세요.
+모든 요소가 같은 객체 val을 참조하고 있습니다[[trap:Array]].
+아래 예에 나와있는 배열의 모든 요소들은 같은 문자열 객체입니다.
+
+@param size 배열의 길이를 정수로 지정합니다.
+
+@param val 배열 요소의 값을 지정합니다.
+
+예:
+
+    ary = Array.new(3, "foo")
+    p ary                     #=> ["foo", "foo", "foo"]
+    ary[0].capitalize!    p ary                     #=> ["Foo", "Foo", "Foo"]  (모든 요소는 같은 객체입니다)
+
+#@since 1.8.0
+--- new(ary)    -> Array
+
+지정된 배열 ary를 복사해서 리턴합니다.
+[[m:Array#dup]]와 마찬가지로 배열의 요소 자체는 복사되지 않는 얕은 복사를 수행합니다.
+
+@param ary 복사하려는 배열을 지정합니다.
+
+예:
+
+    p Array.new([1,2,3]) # => [1,2,3]
+
+    a = ["a", "b", "c"]
+    b = Array.new(a)
+    a.each{|s| s.capitalize!}
+    p a                        #=> ["A", "B", "C"]
+    p b                        #=> ["A", "B", "C"]   (b は a と要素を共有する)
+
+#@end
+
+--- new(size) {|index| ... }    -> Array
+
+길이가 size인 배열을 생성하고 각 요소의 인덱스를 인수로 블록을 실행합니다. 블록을 평가한 결과가 각 요소의 값이 됩니다.
+
+요소마다 블록이 실행되므로 모든 요소에 특정 객체를 사용할 수 있습니다.
+
+@param size 배열의 길이를 정수로 지정합니다.
+
+예:
+    ary = Array.new(3){|index| "hoge#{index}"}
+    p ary                      #=> ["hoge0", "hoge1", "hoge2"]
+
+예:
+
+    ary = Array.new(3){ "foo" }
+    p ary                      #=> ["foo", "foo", "foo"]
+    ary[0].capitalize!    p ary                      #=> ["Foo", "foo", "foo"]  (各要素は違うオブジェクトである)
+
+
+== Instance Methods
+
+--- [](nth)    -> object | nil
+--- at(nth)    -> object | nil
+
+nth 번째 요소를 리턴합니다.nth 번째 요소가 존재하지 않으면 nil을 리턴합니다.
+
+@param nth 인데스를 정수로 지정합니다.
+           맨 앞 요소의 인덱스는 0입니다.nth가 음수이면 인덱스를 뒤에서부터 
+           셉니다.맨 뒤 요소의 인덱스는 -1입니다.
+           정수가 아닌 값이 인덱스로 주어지면 to_int 메소드를 실행해
+           암묵적인 형변환을 시도합니다.
+
+@raise TypeError 인수가 정수가 아니며 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+
+예:
+
+  a = [ "a", "b", "c", "d", "e" ]
+  a[0]  #=> "a"
+  a[1]  #=> "b"
+  a[-1] #=> "e"
+  a[-2] #=> "d"
+  a[10] #=> nil
+
+--- [](range)    -> Array | nil
+
+[[c:Range]] 객체 range 범위에 있는 요소들을 배열로 리턴합니다.
+range의 시작값이 배열의 범위를 벗어나면 nil를 리턴합니다.
+range의 시작값이 마지막값보다 큰 경우에는 빈 배열을 리턴합니다.
+
+@param range 생성하려 부분 배열의 범위를 [[c:Range]] 객체로 지정합니다.
+             range의 시작값이나 마지막값이 음수이면 뒤에서부터 위치를 계산합니다.맨 뒤의
+             요소는 인덱스가 -1입니다.
+             마지막값이 배열의 범위에서 벗어나면 벗어난 부부은 무시됩니다.
+
+예:
+
+  a = [ "a", "b", "c", "d", "e" ]
+  a[0..1]   #=> ["a", "b"]
+  a[0...1]  #=> ["a"]
+  a[0..-1]  #=> ["a", "b", "c", "d", "e"]
+  a[-2..-1] #=> ["d", "e"]
+  a[-2..4]  #=> ["d", "e"]  (시작값은 뒤에서 -2번째, end는 앞에서 4+1번째가 됩니다)
+  a[0..10]  #=> ["a", "b", "c", "d", "e"]
+  a[10..11] #=> nil
+  a[2..1]   #=> []
+  a[-1..-2] #=> []
+  
+  # 특별한 경우시작값이 배열 자체의 길이와 같으면 아래와 같이 평가됩니다.
+  a[5]                   #=> nil
+  a[5, 1]                #=> []
+  a[5..10]               #=> []
+
+--- [](start, length)    ->  Array | nil
+
+start 번째 요소부터 length 개의 요소를 가지는 부분배열을 리턴합니다.
+length가 음수이거나 start가 배열의 범위를 벗어나는 경우 nil을 리턴합니다.
+
+@param start 만들고자 하는 부분배열의 시작 인덱스를 정수로 지정합니다.
+             start 값이 음수이면 뒤에서부터 위치를 계산합니다.
+             맨 뒤 요소의 인덱스는 -1입니다.
+             정수가 아닌 객체가 지정되면 to_int 메소드를 호출해
+             암묵적인 형변환을 시도합니다.
+
+@param length 만들고자 하는 부분배열의 길이를 정수로 지정합니다.
+              length가 start번째부터 계산한 길이보다 긴 경우
+              초과한 부분은 무시됩니다.
+              정수가 아닌 객체를 지정하면 to_int 메소드를 호출해
+              암묵적인 형변환을 시도합니다.
+
+@raise TypeError 인수가 정수가 아니며 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+
+예:
+
+  a = [ "a", "b", "c", "d", "e" ]
+  a[0, 1]    #=> ["a"]
+  a[-1, 1]   #=> ["e"]
+  a[0, 10]   #=> ["a", "b", "c", "d", "e"]
+  a[0, 0]    #=> []
+  a[0, -1]   #=> nil
+  a[10, 1]   #=> nil
+ 
+  # 특별한 경우start가 배열의 길이와 같은 경우 아래와 같이 평가됩니다.
+  a[5]                   #=> nil
+  a[5, 1]                #=> []
+  a[5..10]               #=> []
+
+--- []=(nth, val)
+
+nth번째 요소에 val을 대입합니다.nth가 현재 배열의 범위를 넘어선 경우 배열의 길이를 자동적으로 늘리고
+자동적으로 늘어난 부분에 대해서는 nil로 초기화합니다.
+
+@param nth 인데스를 정수로 지정합니다.
+           정수가 아닌 값이 인덱스로 주어지면 to_int 메소드를 실행해
+           암묵적인 형변환을 시도합니다.
+
+@param val 대입하려는 요소의 값을 지정합니다.
+
+@raise TypeError 인수가 정수가 아니며 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+
+@raise IndexError 지정된 nth가 self의 시작 위치보다 앞서면 발생합니다.
+
+예:
+
+  a = [0, 1, 2, 3, 4, 5]
+  a[0] = "a"
+  p a  #=> ["a", 1, 2, 3, 4, 5]
+  a[10] = "x"
+  p a  #=> ["a", 1, 2, 3, 4, 5, nil, nil, nil, nil, "x"]
+ 
+  a = [0, 1, 2, 3, 4, 5]
+  a[-100] = 1           #=> IndexError
+
+--- []=(range, val)
+
+[[c:Range]] 객체의 range의 범위에 있는 요소를 배열 val의 내용으로 바꿉니다.
+range의 시작값이 self 배열의 마지막보다 큰 경우 배열의 길이는 자동적으로 늘어나며 늘어난 부분은 nil로 초기화합니다.
+
+    ary = [0, 1, 2, 3, 4, 5]
+    ary[0..2] = ["a", "b"]
+    p ary  # => ["a", "b", 3, 4, 5]
+
+    ary = [0, 1, 2]
+    ary[5..6] = "x"
+    p ary  # => [0, 1, 2, nil, nil, "x"]
+    
+    ary = [0, 1, 2, 3, 4, 5]
+    ary[1..3] = "x"
+    p ary  # => [0, "x", 4, 5]
+
+@param range 바꾸려는 배열의 범위 [[c:Range]] 객체로 지정합니다.
+             range의 시작값이나 마지막값이 음수이면 뒤에서부터 위치를 계산합니다.
+             맨 뒤 요소의 인덱스는 -1입니다.
+             range의 시작값이 마지막값보다 뒤이면 시작값 바로 앞에 val을 집어넣습니다.
+//emlist{
+    ary = [0, 1, 2, 3, 4, 5]
+    ary[2..0] = ["a", "b", "c"]
+    p ary   # => [0, 1, "a", "b", "c", 2, 3, 4, 5]
+//}
+
+@param val range의 범위에 있는 값과 바꾸려는 요소들을 배열로 지정합니다.
+           배열이 아닌 객체를 지정한 경우 to_ary 메소드를 호출해
+           암묵적인 형변환을 시도합니다.to_ary 메소드로 형변환이 불가능하면
+           [val]을 사용합니다.
+           val 배열의 길이가 rang의 길이보다 긴 경우에는 뒤에 부분이 버려집니다.
+#@since 1.9.1
+           val이 빈 배열 []이면 range의 범위에 해당하는 부분이 삭제됩니다.
+#@else
+           val이 nil이거나 빈 배열 []이면 range 범위에 해당하는 부분이 삭제됩니다.
+#@end
+//emlist{
+    ary = [0, 1, 2, 3, 4, 5]
+    ary[2..4] = nil
+    p ary   # => [0, 1, 5]
+//}
+@raise RangeError 지정한 범위의 시작점이 self의 시작점보다 앞선 경우에 발생합니다.
+
+예:
+
+  a = [0, 1, 2, 3, 4, 5]
+  a[-10..10] = 1        #=> RangeError
+
+--- []=(start, length, val)
+
+start번째 요소부터 length 개의 요소를 val 배열의 값들로 바꿉니다.
+start가 self 배열의 길이를 넘어서면 배열의 길이를 자동적으로 늘리고 늘어난 부분은 nil로 초기화합니다.
+
+  ary = [0, 1, 2, 3]
+  ary[1, 2] = ["a", "b", "c", "d"]
+  p ary                        #=> [0, "a", "b", "c", "d", 3]
+  
+  ary = [0, 1, 2]
+  ary[5, 1] = "Z"
+  p ary                        #=> [0, 1, 2, nil, nil, "Z"]
+    
+  ary = [0, 1, 2, 3]
+  ary[0, 10] = ["a"]
+  p ary                        #=> ["a"]
+
+@param start 바꾸고 싶은 범위의 인덱스를 지정합니다.
+             start 값이 음수이면 뒤에서부터 위치를 계산합니다.
+             맨 뒤 요소의 인덱스는 -1입니다.
+             정수가 아닌 객체가 지정되면 to_int 메소드를 호출해
+             암묵적인 형변환을 시도합니다.
+
+@param length 바꾸로는 요소의 개수를 지정합니다.
+              length의 값이 0이면 start 바로 앞에 val의 값을 집어넣습니다.
+              정수가 아닌 객체를 지정하면 to_int 메소드를 호출해
+              암묵적인 형변환을 시도합니다.
+//emlist{
+    ary = [0, 1, 2, 3]
+    ary[1, 0] = ["inserted"]
+    p ary                        # => [0, "inserted", 1, 2, 3]
+//}
+
+@param val 원래의 값과 바꾸려는 값을 배열로 지정합니다.
+           배열이 아닌 객체를 지정한 경우 to_ary 메소드를 호출해
+           암묵적인 형변환을 시도합니다.to_ary 메소드로 형변환이 불가능하면
+           [val]을 사용합니다.
+           val의 길이가 length와 같지 않은 경우에는 val의 길이에 맞춰 요소들이 지워지거나 어긋납니다.
+#@since 1.9.1
+           val이 빈 배열 []이면 range의 범위에 해당하는 부분이 삭제됩니다.
+#@else
+           val이 nil이거나 빈 배열 []이면 range 범위에 해당하는 부분이 삭제됩니다.
+#@end
+//emlist{
+    a = [0, 1, 2, 3, 4, 5]
+    a[2, 3] = nil
+    p a   # => [0, 1, 5]
+//}
+
+@raise TypeError 인수 start、length가 정수도 아니고 암묵적인 형변환도 불가능한 
+                 객체일 때 발생합니다.
+
+@raise TypeError 인수 val이 배열이 아니고 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+
+@raise IndexError 인수 start가 self의 시작점보다 앞선 경우에 발생합니다.
+
+@raise IndexError 인수 length가 음수일 때 발생합니다.
+
+--- +(other)    -> Array
+
+self와 other의 내용을 연결한 새로운 배열을 리턴합니다.
+
+@param other self와 연결하를 배열을 지정합니다.
+             배열이 아닌 객체를 지정한 경우 to_ary 메소를 호출해
+             암묵적인 형변환을 시도합니다.
+
+@raise TypeError 인수가 배열이 아니고 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+
+    a = [1, 2]
+    b = [8, 9]
+    p a + b     #=> [1, 2, 8, 9]
+    p a         #=> [1, 2]        (変化なし)
+    p b         #=> [8, 9]        (こちらも変化なし)
+
+--- *(times)    -> Array
+
+배열의 내용을 times 회 반복해서 만든 새로운 배열을 리턴합니다.
+값은 복사되지 않으므로 주의가 필요합니다 [[trap:Array]].
+
+@param times 반복하려는 횟수를 정수로 지정합니다.
+             정수가 아닌 객체가 지정되면 to_int 메소드를 호출해
+             암묵적인 형변환을 시도합니다.
+
+@raise TypeError 인수가 정수가 아니며 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+
+@raise IndexError 인수가 음수일 때 발생합니다.
+
+    p [1, 2, 3] * 3  #=> [1, 2, 3, 1, 2, 3, 1, 2, 3]
+
+--- *(sep)    -> String
+
+배열의 요소 사이에 sep을 집어넣어서 연결한 문자열을 만들어 리턴합니다.[[m:Array#join]](sep)와 같습니다.
+
+@param sep 문자열을 지정합니다.
+           문자열이 아닌 객체를 지정한 경우 to_str 메소드를 호출해
+           암묵적인 형변환을 시도합니다.
+
+    p [1,2,3] * ","
+    # => "1,2,3"
+
+@see [[m:Array#join]]
+
+--- -(other)    -> Array
+
+self에서 other의 요소들을 제거한 배열을 만들어 리턴합니다.
+
+#@since 1.8.0
+같은 요소인지 판단은 [[m:Object#eql?]] 메소드를 사용합니다.
+self 배열에선 중복되지만 other에 없는 요소는 그대로 중복이 유지됩니다.
+#@else
+중복되는 요소는 제거됩니다.
+같은 요소인지 판단은 [[m:Object#===]] 메소드가 사용됩니다.
+#@end
+
+@param other self에서 제거하려는 요소를 배열로 지정합니다.
+             배열이 아닌 객체를 지정한 경우 to_ary 메소를 호출해
+             암묵적인 형변환을 시도합니다.
+
+@raise TypeError 인수가 배열이 아니고 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+
+#@since 1.8.0
+    [1, 2, 1, 3, 1, 4, 1, 5] - [2, 3, 4, 5]       # => [1, 1, 1, 1]
+
+    [1, 2, 1, 3, 1, 4, 1, 5] - [1, 2, 3, 4, 5]    # => []
+#@end
+
+--- &(other)    -> Array
+
+배열의 교집합을 만듭니다.두 배열 모두에 포함된 요소들을 가지고 새로운 배열을 만들되중복되는 요소는 삭제합니다.
+
+요소가 중복되는 지는 [[m:Object#eql?]] 메소드를 사용합니다.
+
+@param other 배열을 지정합니다.
+             배열이 아닌 객체를 지정한 경우 to_ary 메소를 호출해
+             암묵적인 형변환을 시도합니다.
+
+@raise TypeError 인수가 배열이 아니고 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+
+  [1, 1, 2, 3] & [1, 3, 4] #=> [1, 3]
+
+@see [[m:Array#|]]
+
+--- |(other)    -> Array
+
+배열의 합집합을 만듭니다.두 배열에 있는 모든 요소를 포함하는 배열을 만들되,중복되는 요소는 삭제합니다.
+
+요소가 중복되는 지는 [[m:Object#eql?]] 메소드를 사용합니다.
+
+@param other 배열을 지정합니다.
+             배열이 아닌 객체를 지정한 경우 to_ary 메소를 호출해
+             암묵적인 형변환을 시도합니다.
+
+@raise TypeError 인수가 배열이 아니고 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+
+  [1, 1, 4, 2, 3] | [4, 5, 5]  #=> [1, 4, 2, 3, 5]
+
+@see [[m:Array#&]]
+
+--- <<(obj)    -> self
+
+지정된 obj를 self의 마지막에 추가합니다. 이 메소드는 원래의 배열 자체를 바꾸고 self를 리턴합니다.(파괴적인 메소드)
+
+  ary = [1]
+  ary << 2
+  p ary      # [1, 2]
+
+이 메소드는 self를 리턴하므로 아래와 같이 연속적으로
+사용할 수 있습니다.
+
+  ary = [1]
+  ary << 2 << 3 << 4
+  p ary   #=> [1, 2, 3, 4]
+
+@param obj self에 추가하고 싶은 객체를 지정합니다.[[m:Array#push]]와 달리 인수는 하나만 지정할 수 있습니다.
+
+@see [[m:Array#push]]
+
+#@since 1.9.2
+--- <=>(other)    -> -1 | 0 | 1 | nil
+#@else
+--- <=>(other)    -> -1 | 0 | 1
+#@end
+
+self와 other의 각 요소를 각각 <=> 메소드로 비교하고 결과가 0이 아니면 그 값을 리턴합니다.요소들이 모두 같고 배열의 길이도 같으면 0을 리턴합니다.
+요소들의 비교를 진행하는 가운데 모든 요소가 같았으나, 어느 한 쪽 배열의 요소가 더 이상 존재하지 않는 경우 self가 짧으면 -1, 반대이면 1을 리턴합니다.
+#@since 1.9.2
+other에 배열이 아닌 객체를 지정하면 nil을 리턴합니다.
+#@end
+
+@param other self와 비교하려는 배열을 지정합니다.
+             배열이 아닌 객체를 지정한 경우 to_ary 메소를 호출해
+             암묵적인 형변환을 시도합니다.
+
+#@until 1.9.2
+@raise TypeError 인수가 배열이 아니고 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+#@end
+
+  [ 1, 2, 3 ] <=> [ 1, 3, 2 ]       #=> -1
+  [ 1, 2, 3 ] <=> [ 1, 2 ]          #=> 1
+
+--- ==(other)    -> bool
+
+self와 other의 각 요소를 각각 순서대로 == 메소드로 비교하고
+모든 요소가 같으면 true를 리턴합니다.그렇지 않으면 false를 리턴합니다.
+
+@param other self와 비교하려는 배열을 지정합니다.
+
+@see [[m:Object#==]]
+
+--- assoc(key)    -> Array | nil
+
+배열들을 요소로 가지는 배열을 검색합니다. 요소가 되는 각 배열의 0번째 요소와 
+key를 ==으로 비교해 같으면 해당하는 배열을 리턴합니다.해당하는 배열이 없으면 nil을 리턴합니다.
+
+@param key 찾으려는 객체를 지정합니다.
+
+    ary = [[1,15], [2,25], [3,35]]
+    p ary.assoc(2)           # => [2, 25]
+    p ary.assoc(100)         # => nil
+    p ary.assoc(15)          # => nil
+
+@see [[m:Array#rassoc]]
+
+--- clear    -> self
+
+배열의 모든 요소를 삭제합니다.
+
+    ary = [1, 2]
+    ary.clear
+    p ary     #=> []
+
+--- clone    -> Array
+--- dup      -> Array
+
+리시버 객체의 내용을 복사한 배열을 리턴합니다.
+
+clone는 frozen, tainted, singleton-class에 관련된 정보도 복사하지만
+dup는 내용만 복사합니다.
+두 메소드 모두 각각의 요소 자체를 복사하진 않습니다.
+즉 얕은 복사가 이루어집니다.
+
+    ary = ['string']
+    p ary             #=> ["string"]
+    copy = ary.dup
+    p copy            #=> ["string"]
+
+    ary[0][0...3] = ''
+    p ary             #=> ["ing"]
+    p copy            #=> ["ing"]
+
+--- collect!{|item| ..}    -> self
+--- map!{|item| ..}        -> self
+#@since 1.8.7
+#@since 1.9.1
+--- collect!-> Enumerator
+--- map!-> Enumerator
+#@else
+--- collect!-> Enumerable::Enumerator
+--- map!-> Enumerable::Enumerator
+#@end
+#@end
+
+각 요소를 순서대로 블록에 넘겨서 평가하고 그 결과로 원래의 요소를
+대체합니다.
+
+#@since 1.8.7
+블록이 주어지지 않으면 self와 map!에서 만들어진
+#@since 1.9.1
+[[c:Enumerator]] 객체를 리턴합니다.
+#@else
+[[c:Enumerable::Enumerator]] 객체를 리턴합니다.
+#@end
+#@end
+
+예:
+
+    ary = [1, 2, 3]
+    ary.map!{|i| i * 3 }
+    p ary   #=> [3, 6, 9]
+
+#@since 1.8.7
+    ary = [1, 2, 3]
+    e = ary.map!    e.each{ 1 }
+    p ary           #=> [1, 1, 1]
+#@end
+
+#@since 1.9.1
+@see [[m:Enumerable#collect]], [[c:Enumerator]]
+#@else
+@see [[m:Enumerable#collect]], [[c:Enumerable::Enumerator]]
+#@end
+
+--- compact     -> Array
+--- compact!-> self | nil
+
+self 에서 nil을 가진 요소를 전부 제거한 배열을 리턴합니다.
+compact!메소드는 self에서 nil을 가진 요소를 전부 삭제하여 원래의 배열을 대체합니다.
+변경이 이루어졌으면 self를 그렇지 않으면 nil를 리턴합니다.
+
+    ary = [1, nil, 2, nil, 3, nil]
+    p ary.compact   #=> [1, 2, 3]
+    p ary           #=> [1, nil, 2, nil, 3, nil]
+    ary.compact!    p ary           #=> [1, 2, 3]
+    p ary.compact!#=> nil
+
+--- concat(other)    -> self
+
+배열 other을 self의 맨 뒤에 연결한 배열로 원래의 배열을 대체합니다.
+
+@param other self와 연결하려는 배열을 지정합니다.
+
+    array = [1, 2]
+    a     = [3, 4]
+    array.concat a
+    p array          # => [1, 2, 3, 4]
+    p a              # => [3, 4]       # a 변수는 변하지 않습니다.
+
+
+--- delete(val)           -> object | nil
+--- delete(val) { ... }   -> object
+
+배열에 있는 요소들이 val과 같은 같을 값을 가지는 지 == 메소드를 통하여 확인하고, 같은 값을 가지면 그 요소를 삭제합니다. 
+#@since 1.9.1
+같은 요소가 발견되면 맨 마지막에 발견된 요소를 리턴하고
+#@else
+같은 요소가 발견되면 val을 리턴하고
+#@end
+그렇지 않으면 nil을 리턴합니다.
+
+블록이 넘겨졌을 때 val과 같은 요소를 찾지 못 하면, 블록을 평가하고 그 결과를 리턴합니다.
+
+@param val self에서 삭제하고 싶은 값을 지정합니다.
+
+    array = [1, 2, 3, 2, 1]
+    p array.delete(2)       #=> 2
+    p array                 #=> [1, 3, 1]
+
+    # 블록 없이 nil을 인수로 지정하게 되면 리턴값으로
+    # 삭제가 이루어졌는지 확인할 수 없습니다.
+    ary = [nil,nil,nil]
+    p ary.delete(nil)       #=> nil
+    p ary                   #=> []
+    p ary.delete(nil)       #=> nil
+
+--- delete_at(pos)    -> object | nil
+
+지정된 위치 pos에 있는 요소를 삭제하고 삭제된 요소를 리턴합니다.
+pos가 배열의 범위를 넘어서면 nil을 리턴합니다.
+
+[[m:Array#at]]와 마찬가지로 at에 음수를 지정하면 배열의 맨 뒤부터 요소를 찾습니다.
+
+@param pos 삭제하고 싶은 요소의 인덱스를 정수로 지정합니다.
+           정수가 아닌 값이 인덱스로 주어지면 to_int 메소드를 실행해
+           암묵적인 형변환을 시도합니다.
+
+@raise TypeError 인수가 정수가 아니며 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+
+    array = [0, 1, 2, 3, 4]
+    array.delete_at 2
+    p array             #=> [0, 1, 3, 4]
+
+--- delete_if {|x| ... }    -> self
+--- reject!{|x| ... }      -> self | nil
+#@since 1.8.7
+#@since 1.9.1
+--- delete_if               -> Enumerator
+--- reject!-> Enumerator
+#@else
+--- delete_if               -> Enumerable::Enumerator
+--- reject!-> Enumerable::Enumerator
+#@end
+#@end
+
+배열의 각 요소를 순서대로 블록에 넘겨 평가하고 그 결과가 true인 요소를 전부 삭제합니다.
+delete_if는 항상 self를 리턴합니다만 reject!는 요소가 하나 이상 삭제 되면 self를 리턴하고
+하나도 삭제 되지 않았으면 nil을 리턴합니다.
+
+#@since 1.8.7
+블록이 주어지지 않으면 self와 reject!에서 만들어진
+#@since 1.9.1
+[[c:Enumerator]] 객체를 리턴합니다.
+#@else
+[[c:Enumerable::Enumerator]] 객체를 리턴합니다.
+#@end
+리턴된 Enumerator 객체의 each 메소드에는
+원래의 배열에 대한 부작용이 있을 수 발생할 수 있으므로 주의가 필요합니다. @@@#@end
+
+예:
+  a = [0, 1, 2, 3, 4, 5]
+  a.delete_if{|x| x % 2 == 0}
+  p a #=> [1, 3, 5]
+
+#@since 1.8.7
+  a = [0, 1, 2, 3, 4, 5]
+  e = a.reject!  e.each{|i| i % 2 == 0}
+  p a                    #=> [1, 3, 5]  もとの配列から削除されていることに注意。#@end
+
+--- each {|item| .... }    -> self
+#@since 1.8.7
+#@since 1.9.1
+--- each                   -> Enumerator
+#@else
+--- each                   -> Enumerable::Enumerator
+#@end
+#@end
+
+배열의 각 요소들을 블록에 넘겨 평가합니다.
+
+#@since 1.8.7
+블록이 주어지지 않으면
+#@since 1.9.1
+[[c:Enumerator]] 객체를 생성해서 리턴합니다.
+#@else
+[[c:Enumerable::Enumerator]] 객체를 리턴합니다.
+#@end
+#@end
+
+    [1, 2, 3].each do |i|
+      puts i
+    end
+    #=> 1
+        2
+        3
+
+#@#
+#@#each나 다른 표준 메소드로는 여러 개의 값을 한꺼번에 다루면서 반복하는 게
+#@#불가능합니다.여러 개의 값을 한꺼번에 반복하려면 아래와 같은 메소드를 정의해야
+#@#합니다.
+#@#
+#@#    class Array
+#@#      def every(&block)
+#@#        arity = block.arity
+#@#        return self.each(&block) if arity <= 0
+#@#
+#@#        i = 0
+#@#        while i < self.size
+#@#          yield(*self[i, arity])
+#@#          i += arity
+#@#        end
+#@#        self
+#@#      end
+#@#    end
+#@#
+#@#    ary = [1,2,3]
+#@#    ary.every {|i| p i}
+#@#    # => 1
+#@#    #    2
+#@#    #    3
+#@#    ary.every {|i,j| p [i,j]}
+#@#    # => [1, 2]
+#@#    #    [3, nil]
+#@#    ary.every {|i,j,k| p [i,j,k]}
+#@#    # => [1, 2, 3]
+#@#    ary.every {|*i| p *i}
+#@#    # => 1
+#@#    #    2
+#@#    #    3
+
+--- each_index {|index| .... }    -> self
+#@since 1.8.7
+#@since 1.9.1
+--- each_index                    -> Enumerator
+#@else
+--- each_index                    -> Enumerable::Enumerator
+#@end
+#@end
+
+배열 각 요소들의 인덱스를 블록에 넘겨 평가합니다.
+
+아래와 같이 사용합니다.
+
+    (0 ... ary.size).each {|index| ....  }
+
+#@since 1.8.7
+블록이 주어지지 않으면 self와 each_index에서 만들어진
+#@since 1.9.1
+[[c:Enumerator]] 객체를 리턴합니다.
+#@else
+[[c:Enumerable::Enumerator]] 객체를 리턴합니다.
+#@end
+#@end
+
+--- empty?-> bool
+
+배열에 속해있는 요소가 없으면 true를 리턴합니다.그렇지 않으면 false를 리턴합니다.
+
+  p [].empty?#=> true
+  p [1, 2, 3].empty?#=> false
+
+--- eql?(other)    -> bool
+
+self와 other의 각 요소를 순서대로 [[m:Object#eql?]] 메소드로 비교하고 모든 요소가 같으면 true를 리턴합니다.그렇지 않으면 false를 리턴합니다.
+
+@param other self와 비교하려는 배열을 지정합니다.
+
+  ["a", "b", "c"].eql?["a", "b", "c"]      #=> true
+  ["a", "b", "c"].eql?["a", "c", "b"]      #=> false
+  ["a", "b", 1].eql?["a", "b", 1.0]      #=> false (1.eql?(1.0) が false なので)
+
+@see [[m:Object#eql?]]
+
+--- fetch(nth)               -> object
+--- fetch(nth, ifnone)       -> object
+--- fetch(nth) {|nth| ... }  -> object
+
+nth 번째 요소를 리턴합니다.
+
+nth번째 요소가 없을 때 동작이 [[m:Array#[] ]](nth)와 다른 점에 주의해주세요.fetch(nth)으로 사용할 땐 [[c:IndexError]] 예외가 발생합니다.
+fetch(nth, ifnone)으로 사용할 땐 인수 ifnone을 리턴합니다.
+fetch(nth) {|nth| ... }으로 사용할 땐 블록을 평가한 결과를 리턴합니다.
+
+@param nth 찾으려는 요소의 인덱스를 정수로 지정합니다.
+           정수가 아닌 값이 인덱스로 주어지면 to_int 메소드를 실행해
+           암묵적인 형변환을 시도합니다.
+
+@param ifnone 요소가 존재하지 않을 때 리턴할 값을 지정합니다.
+
+@raise TypeError 인수가 정수가 아니며 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+
+@raise IndexError 인수 ifnone이나 블록을 지정하지 않고 nth번째 요소도
+                  존재하지 않으면 발생합니다.
+
+예:
+
+  a = [1, 2, 3, 4, 5]
+  begin
+    p a.fetch(10)
+  rescue IndexError => err
+    puts err #=> index 10 out of array
+  end
+  
+  p a.fetch(10, 999) #=> 999
+  
+  result = a.fetch(10){|nth|
+    print "#{nth} 는 존재하지 않습니다.\n"
+    999
+  }
+  p result #=> 999
+
+--- fill(val)            -> self
+#@since 1.8.0
+--- fill {|index| ... }  -> self
+#@end
+
+배열의 모든 요소를 val로 채웁니ㅏ.
+
+이 메소드는 내부적으로 val을 복사하지 않고 모든 요소가 val 객체를 참조하도록 만듭니다. ([[trap:Array]])val 대신에 블록을 넘기면 블록을 평가한 결과로 배열의 모든 요소를 채웁니다.
+
+@param val 배열을 채우려는 요소를 객체로 지정합니다.
+
+  a = [0, 1, 2, 3, 4]
+  a.fill(10)
+  p a #=> [10, 10, 10, 10, 10]
+  
+  a = [0, 1, 2, 3, 4]
+  a.fill("a")
+  p a #=> ["a", "a", "a", "a", "a"]
+  a[0].capitalize!  p a #=> ["A", "A", "A", "A", "A"]
+
+--- fill(val, start, length = nil)             -> self
+--- fill(val, range)                     -> self
+#@since 1.8.0
+--- fill(start, length = nil) {|index| ... }    -> self
+--- fill(range) {|index| ... }            -> self
+#@end
+
+지정된 범위 요소들을 전부 val로 채웁니다.
+
+범위의 시작값이 self의 범위를 넘어서면 배열은 자동적으로 늘어나고 늘어난 부분은 nil로 초기화합니다.
+범위의 마지막값이 self의 범위를 넘어서면 배열은 자동적으로 늘어나고 늘어난 부분은 val로 초기화합니다.
+이 메소드는 val을 복사하지 않고 val 자체를 참조하므로 주의할 필요가 있습니다.([[trap:Array]]).
+  a = [0, 1, 2]
+  a.fill("x", 5..10)
+  p a #=> [0, 1, 2, nil, nil, "x", "x", "x", "x", "x", "x"]
+
+#@since 1.8.0
+val 대신에 블록을 넘겨주면 블록을 평가한 결과를 val로 삼습니다.요소마다 블록이 실행되므로 모든 요소에 특정 객체를 사용할 수 있습니다.
+블록 인자에는 start부터 시작하는 인덱스가 넘겨집니다.
+
+    ary = []
+    p ary.fill(1..2) {|i| i}         # => [nil, 1, 2]
+    p ary.fill(0,3) {|i| i}          # => [0, 1, 2]
+    p ary.fill { "foo" }             # => ["foo", "foo", "foo"]
+    p ary.collect {|v| v.object_id } # => [537770124, 537770112, 537770100]
+#@end
+
+@param val self에 집어넣을 객체를 지정합니다.
+
+@param start val을 집어넣을 범위의 시작값을 정수로 지정합니다.start 값이 음수이면 뒤에서부터 위치를 계산합니다.맨 뒤 요소의 인덱스는 -1입니다.
+
+@param length val을 집어넣을 요소의 갯수를 지정합니다.nil은 현재 배열의 마지막 인덱스를 의미합니다.
+
+@param range val을 집어넣으려는 범위를 [[c:Range]] 객체로 지정합니다.
+
+#@##@since 1.8.0
+#@#version 1.8.0에선 블록에 넘겨진 인자
+#@#가 설계와 다른 문제가 있었습니다. @@@#@#
+#@#    ary = []
+#@#    p ary.fill(1..2) {|i| i}         # => [2, 4, 6]  <- bug
+#@#    p ary.fill(0,3) {|i| i}          # => [1, 3, 5]  <- bug
+#@#    p ary.fill { "foo" }             # => ["foo", "foo", "foo"]
+#@#    p ary.collect {|v| v.object_id } # => [537770124, 537770112, 537770100]
+#@##@end
+
+--- first       -> object | nil
+
+배열의 맨 앞에 있는 요소를 리턴합니다.요소가 없으면 nil을 리턴합니다.
+
+    p [0, 1, 2].first   #=> 0
+    p [].first          #=> nil
+
+@see [[m:Array#last]]
+
+#@since 1.8.0
+--- first(n)    -> Array
+
+맨 앞의 n 요소를 배열로 리턴합니다.n은 0보다 커야만 합니다.
+
+@param n 새로운 배열을 만들려는 요소의 개수를 정수로 지정합니다.
+         정수가 아닌 객체를 지정하면 to_int 메소드로 암묵적인
+         형변환을 시도합니다.
+
+@raise TypeError 인수가 정수가 아니며 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+
+@raise ArgumentError n이 음수이면 발생합니다.
+
+    ary =  [0, 1, 2]
+    p ary.first(0)
+    p ary.first(1)
+    p ary.first(2)
+    p ary.first(3)
+    p ary.first(4)
+    # => []
+         [0]
+         [0, 1]
+         [0, 1, 2][0, 1, 2]
+         [0, 1, 2][0, 1, 2]
+
+@see [[m:Array#last]]
+#@end
+
+#@since 1.8.7
+--- flatten(lv = nil)     -> Array
+--- flatten!(lv = nil)    -> self | nil
+#@else
+--- flatten               -> Array
+--- flatten!-> self | nil
+#@end
+
+flatten은 self에 포함된 배열 요소들을 1차원 배열로 만듭니다.flatten!는 flatten과 같지만 파괴적인 메소드이며 변경이 된 부분이 있으면 self를 리턴하고
+그렇지 않으면 nil을 리턴합니다.
+#@since 1.8.7
+lv가 지정되어 있으면 lv 깊이 만큼만 1차원 배열로 만듭니다.
+#@end
+
+#@since 1.8.7
+@param lv 1차원 배열로 만드려는 깊이를 정수로 지정합니다.nil을 지정하면 모든 요소를
+          1차원 배열로 만듭니다.
+          정수가 아닌 객체를 지정하면 to_int 메소드로 암묵적인
+          형변환을 시도합니다.
+
+@raise TypeError 인수가 정수가 아니며 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+#@end
+
+@raise ArgumentError 배열 요소가 배열 자신을 포함한 무한한 깊이를 가지는 배열에 flatten 메소드를 호출하면 발생합니다.
+
+    # 배열을 1차원 배열로 만드는 예제    a = [1, [2, 3, [4], 5]]
+    p a.flatten                     #=> [1, 2, 3, 4, 5]
+    p a                             #=> [1, [2, 3, [4], 5]]
+
+    # 파괴적으로 1차원 배열로 만드는 예    a = [[[1, [2, 3]]]]
+    p a.flatten!#=> [1, 2, 3]
+    p a                             #=> [1, 2, 3]
+
+    # 변경된 사항이 없으면 nil을 리턴합니다.
+    p [1, 2, 3].flatten!#=> nil
+ 
+#@since 1.8.7
+    # 1차원 배열을 만드는 깊이를 지정한 예    a = [ 1, 2, [3, [4, 5] ] ]
+    a.flatten(1)              #=> [1, 2, 3, [4, 5]]
+#@end
+
+--- hash    -> Integer
+
+自身のハッシュ値を整数で返します。ハッシュ値は自身の各要素のハッシュ値から
+計算されます。[[m:Array#eql?]] で比較して等しい配列同士は同じハッシュ値を返します。
+
+  a = ["a", "b", 1]
+  a.hash                #=>  321
+  b = a.dup
+  b.hash                #=>  321
+  
+  ["a", 1, "b"].hash    #=>  491
+  ["a", 1.0, "b"].hash  #=>  466227
+
+--- include?(val)    -> bool
+
+배열이 val과 == 메소드로 평가했을 true를 리턴하는 요소를 가지고 있으면 true를 리턴합니다.
+
+@param val 객체를 지정합니다.
+
+   a = [ "a", "b", "c" ]
+   a.include?("b")       #=> true
+   a.include?("z")       #=> false
+
+--- index(val)           -> Integer | nil
+#@since 1.8.7
+--- index {|item| ...}   -> Integer | nil
+#@since 1.9.1
+--- index                -> Enumerator
+#@else
+--- index                -> Enumerable::Enumerator
+#@end
+#@end
+
+指定された val と == で等しい最初の要素の位置を返します。
+等しい要素がひとつもなかった時には nil を返します。
+
+#@since 1.8.7
+ブロックが与えられた時には、各要素を引数として順にブロックを実行し、
+ブロックが真を返した最初の要素の位置を返します。
+
+引数、ブロックのどちらも与えられなかった時には、自身と index から生成した
+#@since 1.9.1
+[[c:Enumerator]] オブジェクトを返します。#@else
+[[c:Enumerable::Enumerator]] 객체를 리턴합니다.
+#@end
+#@end
+
+@param val インデックスを知りたいオブジェクトを指定します。
+
+    p [1, 0, 0, 1, 0].index(1)   #=> 0
+    p [1, 0, 0, 0, 0].index(1)   #=> 0
+    p [0, 0, 0, 0, 0].index(1)   #=> nil
+#@since 1.8.7
+    p [0, 1, 0, 1, 0].index {|v| v > 0}   #=> 1
+#@end
+
+@see [[m:Array#rindex]]
+
+#@until 1.9.1
+--- indexes(*index)      -> Array
+--- indices(*index)      -> Array
+
+이 메소드는 더 이상 사용되지 않습니다.
+[[m:Array#values_at]] 메소드를 대신 사용해주세요.
+사용하면 경고가 출력됩니다.
+
+各引数の値をインデックスとする要素の配列を返します。範囲外の
+インデックス指定に対しては nil が対応します。
+
+    ary = %w( a b c d e )
+    p ary.indexes( 0, 2, 4 )          #=> ["a", "c", "e"]
+    p ary.indexes( 3, 4, 5, 6, 35 )   #=> ["d", "e", nil, nil]
+    p ary.indexes( 0, -1, -2 )        #=> ["a", "e", "d"]
+    p ary.indexes( -4, -5, -6, -35 )  #=> ["b", "a", nil, nil]
+
+#@end
+
+#@since 1.8.0
+--- insert(nth, *val)    -> self
+
+nth번째 요소 바로 앞에 val을 집어넣습니다. 단, nth가 음수이면 바로 뒤에 집어넣습니다.
+인수 val을 하나라도 지정하지 않으면 아무것도 하지 않습니다.
+
+@param nth val을 집언허을 위치를 정수로 지정합니다.
+           정수가 아닌 값이 인덱스로 주어지면 to_int 메소드를 실행해
+           암묵적인 형변환을 시도합니다.
+
+@param val self에 집언허으려는 객체를 지정합니다.
+
+@raise TypeError 인수가 정수가 아니며 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+
+    ary = [1, 2, 3]
+    ary.insert(2, "a", "b")
+    p ary                  # => [1, 2, "a", "b", 3]
+    ary.insert(-2, "X")
+    p ary                  # => [1, 2, "a", "b", "X", 3]
+
+#@end
+
+--- join(sep = $,)    -> String
+
+배열의 요소들을 문자열 sep으로 연결한 문자열을 리턴합니다.
+
+#@since 1.9.2
+배열의 요소가 문자열이 아니면 to_str으로 형변환을 시도하고, to_str 메소드가 없으면 to_s 메소드로 형변환을 시도합니다.
+#@else
+배열의 요소가 문자열이 아니면 to_s로 형변환을 시도한 결과를 연결합니다.
+#@end
+배열의 요소에 배열이 있으면 재귀적으로 join으로 연결한 문자열을 리턴합니다.
+단, 배욜 요소가 배열 자신을 포함한 무한한 깊이를 가지는 배열의 경우에는 
+아래와 같이 예외가 발생합니다.
+
+#@since 1.9.2
+    ary = [1,2,3]
+    ary.push ary
+    p ary           # => [1, 2, 3, [...]]
+    p ary.join      # => ArgumentError
+#@else
+    ary = [1,2,3]
+    ary.push ary
+    p ary           # => [1, 2, 3, [...]]
+    p ary.join      # => "123123[...]"
+#@end
+
+@param sep 요소 사이사이에 집어넣을 문자열을 지정합니다.nil이면 빈 문자열을 사용합니다.
+           문자열이 아닌 객체를 지정한 경우 to_str 메소드를 호출해
+           암묵적인 형변환을 시도합니다.
+
+@raise TypeError 인수가 정수가 아니며 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+
+#@since 1.9.2
+@raise ArgumentError 배열 요소가 배열 자신을 포함한 무한한 깊이를 가지는 배열에 
+                     join 메소드를 호출하면 발생합니다.
+#@end
+
+  [1, 2, 3].join('-') #=> "1-2-3"
+
+@see [[m:Array#*]], [[m:$,]]
+
+--- last    -> object | nil
+
+배열의 마지막 요소를 리턴합니다.배열이 비어있으면 nil을 리턴합니다.
+
+    p [0, 1, 2].last   #=> 2
+    p [].last          #=> nil
+
+@see [[m:Array#first]]
+
+#@since 1.8.0
+--- last(n)    -> Array
+
+배열의 맨 뒤 n개의 요소를 배열로 리턴합니다.n은 0보다 커야만 합니다.
+
+@param n 새로운 배열을 만들려는 요소의 개수를 정수로 지정합니다.
+         정수가 아닌 객체를 지정하면 to_int 메소드로 암묵적인
+         형변환을 시도합니다.
+
+@raise TypeError 인수가 정수가 아니며 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+
+@raise ArgumentError n이 음수이면 발생합니다.
+
+    ary =  [0, 1, 2]
+    p ary.last(0)
+    p ary.last(1)
+    p ary.last(2)
+    p ary.last(3)
+    p ary.last(4)
+    # => []
+         [2]
+         [1, 2]
+         [0, 1, 2][0, 1, 2]
+         [0, 1, 2][0, 1, 2]
+
+@see [[m:Array#first]]
+#@end
+
+--- length    -> Integer
+--- size      -> Integer
+
+배열의 길이를 리턴합니다.배열이 비어있으면 0을 리턴합니다.
+
+  p [1, nil, 3, nil].size    #=> 4
+
+#@until 1.9.1
+--- nitems    -> Integer
+#@since 1.8.7
+--- nitems{|obj| ... } -> Integer
+#@end
+
+nil이 아닌 요소를 리턴합니다.
+
+#@since 1.8.7
+블록을 넘겨받으면 각 요소를 인수로 평가해, 그 결과가 nil이 아닌 요소의 수를 리턴합니다.
+#@end
+
+예:
+  p [1, nil, 3, nil].nitems              #=> 2
+#@since 1.8.7
+  p [1, nil, 3, nil].nitems{|e| e == 1}  #=> 2
+#@end
+#@end
+
+--- pack(template)    -> String
+
+배열의 내용을 template에서 지정한 문자열에 따라 바이너리로 @@@한 문자열을 리턴합니다.
+
+テンプレートは
+型指定文字列とその長さ(省略時は1)を並べたものです。長さと
+して * が指定された時は「残りのデータ全て」の長さを
+表します。型指定文字は以下で述べる pack テンプレート文字列の通りです。
+
+@param template 自身のバイナリとしてパックするためのテンプレートを文字列で指定します。
+
+#@include(pack-template)
+
+--- pop    -> object | nil
+#@since 1.8.7
+--- pop(n) -> Array
+#@end
+
+self의 맨 뒤에서 요소를 하나 제거하고 그 요소를 리턴합니다.
+#@since 1.8.7
+n 인수를 지정한 경우엔 n개 만큼 제거되고 배열로 리턴합니다.
+
+빈 배열이고 n이 지정되어 있지 않으면 nil을 리턴하고
+n이 지정되어 있으면 빈 배열을 리턴합니다.
+また、n が自身の要素数より少ない場合はその要素数の配列を
+返します。どちらの場合も自身は空配列となります。
+
+返す値と副作用の両方を利用して、個数を指定して配列を 2 分する簡単な方法として使えます。
+
+@param n self에서 제거하려는 요소의 개수를 정수로 지정합니다.
+         정수가 아닌 객체를 지정하면 to_int 메소드로 암묵적인
+         형변환을 시도합니다.
+
+@raise TypeError 인수가 정수가 아니며 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+
+#@else
+빈 배열이면 nil을 리턴합니다.이 때 self는 변하지 않습니다.
+#@end
+
+예:
+      array = [1, [2, 3], 4]
+      p array.pop      # => 4
+      p array.pop      # => [2, 3]
+      p array          # => [1]
+
+      p array.pop      # => 1
+      p array.pop      # => nil
+      p array          # => []
+#@since 1.8.7
+      array = [1, 2, 3]
+      p array.pop(2)   #=> [2, 3]
+      p array          #=> [1]
+#@end
+
+@see [[m:Array#push]], [[m:Array#shift]], [[m:Array#unshift]]
+
+#@since 1.8.0
+--- push(*obj)        -> self
+#@else
+--- push(obj, *rest)  -> self
+#@end
+
+지정된 obj를 순서대로 배열의 맨 뒤에 집어넣습니다.
+#@since 1.8.0
+인수를 지정하지 않으면 아무것도 하지 않습니다.
+#@end
+
+@param obj self에 추가하려는 객체를 지정합니다.
+
+      array = [1, 2, 3]
+      array.push 4
+      array.push [5, 6]
+      array.push 7, 8
+      p array          # => [1, 2, 3, 4, [5, 6], 7, 8]
+
+@see [[m:Array#pop]], [[m:Array#shift]], [[m:Array#unshift]], [[m:Array#<<]]
+
+--- rassoc(obj)    -> Array | nil
+
+自身が配列の配列であると仮定して、要素の配列でインデックス
+1 の要素が obj に等しいものを検索し見つかった最初の要素を返
+します。해당하는 배열이 없으면 nil을 리턴합니다.
+
+비교는 == 연산자를 사용해 이루어집니다.
+
+@param obj 찾으려는 객체를 지정합니다.
+
+    a = [[15,1], [25,2], [35,3]]
+    p a.rassoc(2)    # => [25, 2]
+
+@see [[m:Array#assoc]]
+
+--- replace(another)    -> self
+
+배열의 내용을 배열 another의 내용으로 바꿉니다.
+
+@param another 배열을 지정합니다.
+               배열이 아닌 객체를 지정하면 to_ary 메소드로
+               암묵적인 형변환을 시도합니다.
+
+@raise TypeError 인수가 배열이 아니고 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+
+    a = [1, 2, 3]
+    a.replace [4, 5, 6]
+    p a                 #=> [4, 5, 6]
+
+--- reverse     -> Array
+#@since 1.8.0
+--- reverse!-> self
+#@end
+
+reverse는 self의 요소들을 역순으로 정렬한 새로운 배열을 리턴합니다.
+reverse!는 self를 파괴적으로 역순 정렬합니다.
+#@since 1.8.0
+reverse!는 정렬 후의 self를 리턴합니다.
+#@end
+
+ a = ["a", 2, true]
+ p a.reverse         #=> [true, 2, "a"]
+ p a                 #=> ["a", 2, true] (変化なし)
+ 
+ a = ["a", 2, true]
+ p a.reverse!#=> [true, 2, "a"]
+ p a                 #=> [true, 2, "a"]
+
+--- reverse_each {|item| ... }    -> self
+#@since 1.8.7
+#@since 1.9.1
+--- reverse_each                  -> Enumerator
+#@else
+--- reverse_each                  -> Enumerable::Enumerator
+#@end
+#@end
+
+각 요소들에 대해 역순으로 블록을 평가합니다.
+
+#@since 1.8.7
+블록이 주어지지 않으면 self와 reverse_each에서 만들어진
+#@since 1.9.1
+[[c:Enumerator]] 객체를 리턴합니다.
+#@else
+[[c:Enumerable::Enumerator]] 객체를 리턴합니다.
+#@end
+#@end
+
+--- rindex(val)           -> Integer | nil
+#@since 1.8.7
+--- rindex {|item| ... }  -> Integer | nil
+#@since 1.9.1
+--- rindex                -> Enumerator
+#@else
+--- rindex                -> Enumerable::Enumerator
+#@end
+#@end
+
+指定された val と == で等しい最後の要素の位置を返します。
+等しい要素がひとつもなかった時には nil を返します。
+
+#@since 1.8.7
+ブロックが与えられた時には、各要素を引数として順にブロックを実行し、
+ブロックが真を返した最初の要素の位置を返します。
+
+引数、ブロックのどちらも与えられなかった時には、自身と rindex から生成した
+#@since 1.9.1
+[[c:Enumerator]] オブジェクトを返します。#@else
+[[c:Enumerable::Enumerator]] 객체를 리턴합니다.
+#@end
+#@end
+
+@param val 객체를 지정합니다.
+
+    p [1, 0, 0, 1, 0].rindex(1)   #=> 3
+    p [1, 0, 0, 0, 0].rindex(1)   #=> 0
+    p [0, 0, 0, 0, 0].rindex(1)   #=> nil
+#@since 1.8.7
+    p [0, 1, 0, 1, 0].rindex {|v| v > 0}   #=> 3
+#@end
+
+@see [[m:Array#index]]
+
+--- shift -> object | nil
+#@since 1.8.7
+--- shift(n) -> Array
+#@end
+
+배열의 맨 앞에 있는 요소를 제거하고 그 요소를 리턴합니다.
+#@since 1.8.7
+n 인수를 지정한 경우엔 n개 만큼 제거되고 배열로 리턴합니다.
+
+빈 배열이고 n이 지정되어 있지 않으면 nil을 리턴하고
+n이 지정되어 있으면 빈 배열을 리턴합니다.
+また、n が自身の要素数より少ない場合はその要素数の配列を
+返します。どちらの場合も自身は空配列となります。
+
+返す値と副作用の両方を利用して、個数を指定して配列を 2 分する簡単な方法として使えます。
+
+@param n 自身から取り除きたい要素の個数を非負整数で指定します。         정수가 아닌 객체를 지정하면 to_int 메소드로 암묵적인
+         형변환을 시도합니다.
+@raise TypeError 인수가 정수가 아니며 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+
+@raise IndexError 인수가 음수일 때 발생합니다.
+#@else
+빈 배열이면 nil을 리턴합니다.이 때 self는 변하지 않습니다.
+#@end
+
+
+
+예:
+
+  a = [0, 1, 2, 3, 4]
+  p a.shift            #=> 0
+  p a                  #=> [1, 2, 3, 4]
+
+  p [].shift           #=> nil
+#@since 1.8.7
+  p [].shift(1)        #=> []
+#@end
+
+@see [[m:Array#push]], [[m:Array#pop]], [[m:Array#unshift]]
+
+--- slice(nth)       -> object | nil
+
+nth번째 요소를 리턴합니다.[[m:Array#[] ]]와 같습니다.
+
+@param nth 요소의 인덱스를 정수로 지정합니다.[[m:Array#[] ]]와 같습니다.
+
+예:
+
+  p [0, 1, 2].slice(1)    #=> 1
+  p [0, 1, 2].slice(2)    #=> 2
+  p [0, 1, 2].slice(10)   #=> nil
+
+--- slice(pos, len)  -> Array | nil
+--- slice(range)     -> Array | nil
+
+self에서 지정된 범위를 부분배열로 리턴합니다.[[m:Array#[] ]]와 같습니다.
+
+@param pos [[m:Array#[] ]]와 같습니다.
+
+@param len [[m:Array#[] ]]와 같습니다.
+
+@param range [[m:Array#[] ]]와 같습니다.
+
+예:
+
+  p [0, 1, 2].slice(0, 2)    #=> [0, 1]
+  p [0, 1, 2].slice(2..3)    #=> [2]
+  p [0, 1, 2].slice(10, 1)   #=> nil
+
+--- slice!(nth)       -> object | nil
+
+nth번재 요소를 self에서 제거하고 제거된 요소를 리턴합니다.제거할 요소가 없으면 nil을 리턴합니다.
+
+@param nth 제거할 요소의 인덱스를 정수로 지정합니다.[[m:Array#[] ]]와 같습니다.
+
+예:
+
+   a = [ "a", "b", "c" ]
+   a.slice!(1)     #=> "b"
+   a               #=> ["a", "c"]
+   a.slice!(-1)    #=> "c"
+   a               #=> ["a"]
+   a.slice!(100)   #=> nil
+   a               #=> ["a"]
+
+--- slice!(start, len)  -> Array | nil
+--- slice!(range)     -> Array | nil
+
+self에서 지정된 범위를 제거한 후 제거한 범위를 배열로 리턴합니다.제거할 요소가 없으면 nil을 리턴합니다.
+
+以下のコードと同値です。
+
+     def slice!(*args)
+        result = self[*args]
+        self[*args] = nil
+        result
+     end
+
+ですので以下のように配列の長さが拡張される場合もありえます。
+
+  a = [ "a", "b", "c" ]
+  p a.slice!(5, 1)       #=> nil
+  p a                    #=> ["a", "b", "c", nil, nil]
+
+@param start 제거하려는 범위의 시작 인덱스를 정수로 지정합니다.[[m:Array#[] ]]와 같습니다.
+
+@param len 제거하려는 범위의 길이를 정수로 지정합니다.[[m:Array#[] ]]와 같습니다.
+
+@param range 제거하려는 범위를 [[c:Range]] 객체로 지정합니다.[[m:Array#[] ]]와 같습니다.
+
+@raise IndexError 지정된 범위의 시작값이 self의 시작값보다 앞선 경우에 발생합니다.
+
+예:
+
+   a = [ "a", "b", "c" ]
+   a.slice!(1, 2)     #=> ["b", "c"]
+   a                  #=> ["a"]
+   
+   a = [ "a", "b", "c" ]
+   a.slice!(1, 0)     #=> []
+   a                  #=> [ "a", "b", "c" ]
+ 
+   a = [ "a", "b", "c" ]
+   a.slice!(-10, 1)   #=> IndexError
+
+--- sort                -> Array
+--- sort!-> self
+--- sort {|a, b| ... }  -> Array
+--- sort!{|a, b| ... } -> self
+
+배열을 정렬합니다.정렬은 <=> 연산자의 결과를 기준으로 삼습니다.정렬된 배열을 리턴합니다.
+#@since 1.8.0
+sort!는 배열을 파괴적으로 정렬하고 정렬 후의 self를 리턴합니다.
+#@else
+sort!는 self를 파괴적으로 정렬하고 self를 리턴합니다.단 배열의 길이가 2보다 작을 때는 nil을 리턴합니다.
+#@end
+
+블록이 넘겨진 경우에는 블록을 통해 요소들을 비교합니다.
+블록의 2개의 요소를 인수로 넘겨서 평가하고 그 결과를 비교합니다.
+블록은 <=> 연산자와 마찬가지로 정수값을 리턴해야합니다.블록에 넘겨진 첫번째 인수가 크면 양수, 두 인수가 같으면 0, 첫번째 인수가 작으면 음수를 리턴해야합니다.두 값을 비교할 수 없으면 nil을 리턴합니다.
+
+   a = [ "d", "a", "e", "c", "b" ]
+   p a.sort                                #=> ["a", "b", "c", "d", "e"]
+   
+   b = ["9", "7", "10", "11", "8"]
+   p b.sort                                #=> ["10", "11", "7", "8", "9"] (文字列としてソートするとこうなる)
+   p b.sort{|x, y| x.to_i <=> y.to_i }     #=> ["7", "8", "9", "10", "11"] (ブロックを使って数字としてソート)
+
+   # sort_by를 사용해도 됩니다.
+   p b.sort_by{|x| x.to_i }                #=> ["7", "8", "9", "10", "11"]
+
+@see [[m:Enumerable#sort_by]]
+#@since 1.9.2
+     , [[m:Array#sort_by!]]
+#@end
+
+#@since 1.9.2
+--- sort_by!-> Enumerator
+--- sort_by!{|item| ... } -> self
+sort_by 메소드의 파괴적인 메소드입니다.
+
+블록이 생략되면 리턴값에 의해 배열을 파괴적으로 정렬하는
+[[c:Enumerator]]를 리턴합니다.
+
+@see [[m:Enumerable#sort_by]]
+#@end
+
+--- to_a       -> Array
+
+self를 리턴합니다.단 Array의 서브 클래스 인스턴스에 호출하면
+self를 Array로 변환해서 리턴합니다.
+
+--- to_ary  -> self
+
+self를 그대로 리턴합니다.
+
+#@since 1.9.1
+--- to_s    -> String
+--- inspect -> String
+
+배열의 정보를 인간이 이해하기 쉬운 문자열로 리턴합니다.
+
+  [1, 2, 3, 4].to_s    # => "[1, 2, 3, 4]"
+  [1, 2, 3, 4].inspect # => "[1, 2, 3, 4]"
+
+#@else
+--- to_s    -> String
+
+[[m:Array#join]]([[m:$,]])와 같습니다.
+
+  [1, 2, 3, 4].to_s    # => "1234"
+
+--- inspect -> String
+
+배열의 정보를 인간이 이해하기 쉬운 문자열로 리턴합니다.
+
+  [1, 2, 3, 4].inspect # => "[1, 2, 3, 4]"
+#@end
+
+#@since 1.8.0
+--- transpose    -> Array
+
+배열을 행렬처럼 인식해서 전치행렬을만듭니다.빈 배열이면 빈 배열을 만들어 리턴합니다.
+
+1차원 배열이면
+[[c:TypeError]] 예외를 발생합니다.각 요소들의 길이가 같지 않으면
+[[c:IndexError]] 예외가 발생합니다.
+
+    p [[1,2],
+       [3,4],
+       [5,6]].transpose
+    # => [[1, 3, 5], [2, 4, 6]]
+
+    p [].transpose
+    # => []
+
+    p [1,2,3].transpose
+
+    # => -:1:in `transpose': cannot convert Fixnum into Array (TypeError)
+            from -:1
+
+    p [[1,2],
+       [3,4,5],
+       [6,7]].transpose
+    # => -:3:in `transpose': element size differ (3 should be 2) (IndexError)
+#@end
+
+--- uniq     -> Array
+--- uniq!-> self | nil
+#@since 1.9.2
+--- uniq {|item| ... } -> Array
+--- uniq!{|item| ... } -> self | nil
+#@end
+
+배열에서 중복된 요소를 제거한 새로운 배열을 리턴합니다.
+uniq!메소드는 중복된 요소를 파괴적으로 제거하고, 제거한 요소가 있으면 self를 리턴하고
+그렇지 않으면 nil을 리턴합니다.
+
+제거되어 빈 부분은 앞쪽으로 땡겨집니다.
+요소가 중복되는 지는 [[m:Object#eql?]] 메소드를 사용합니다.
+
+    p [1, 1, 1].uniq         # => [1]
+    p [1, 4, 1].uniq         # => [1, 4]
+    p [1, 3, 2, 2, 3].uniq   # => [1, 3, 2]
+
+#@since 1.9.2
+블록이 넘겨지면 블록이 리턴한 값이 중복되면 해당하는 요소를 제거한 배열을 리턴합니다.
+
+    p [1, 3, 2, "2", "3"].uniq                # => [1, 3, 2, "2", "3"]
+    p [1, 3, 2, "2", "3"].uniq { |n| n.to_s } # => [1, 3, 2]
+#@end
+
+--- unshift(*obj)        -> self
+
+지정된 obj를 순서대로 배열의 맨 뒤에 집어넣습니다.
+인수를 지정하지 않으면 아무것도 하지 않습니다.
+
+@param obj self에 추가하려는 객체를 지정합니다.
+
+    arr = [1,2,3]
+    arr.unshift 0
+    p arr             #=> [0, 1, 2, 3]
+    arr.unshift [0]
+    p arr             #=> [[0], 0, 1, 2, 3]
+    arr.unshift 1, 2
+    p arr             #=> [1, 2, [0], 0, 1, 2, 3]
+
+@see [[m:Array#push]], [[m:Array#pop]], [[m:Array#shift]]
+
+#@since 1.8.0
+--- values_at(*selectors)    -> Array
+
+引数で指定されたインデックスに対応する要素を配列で返します。インデッ
+クスに対応する値がなければ nil が要素になります。
+
+@param selectors インデックスを整数もしくは整数の [[c:Range]] で指定します。#@until 2.0.0
+       [[c:Range]] の場合は、[[m:Range#begin]] が配列のサイズを越える場合は無視され、
+       [[m:Range#end]] が配列のサイズを越えるまで対応する要素が選択されます。       ちょうど配列のサイズを指す場合は、nil で埋められます。#@end
+
+    ary = %w( a b c d e )
+    p ary.values_at( 0, 2, 4 )          #=> ["a", "c", "e"]
+    p ary.values_at( 3, 4, 5, 6, 35 )   #=> ["d", "e", nil, nil, nil]
+    p ary.values_at( 0, -1, -2 )        #=> ["a", "e", "d"]
+    p ary.values_at( -4, -5, -6, -35 )  #=> ["b", "a", nil, nil]
+    p ary.values_at( 1..2 )             #=> ["b", "c"]
+#@since 2.0.0
+    p ary.values_at( 3..10 )            #=> ["d", "e", nil, nil, nil, nil, nil, nil]
+    p ary.values_at( 6..7 )             #=> [nil, nil]
+#@else
+    p ary.values_at( 3..10 )            #=> ["d", "e", nil]
+    p ary.values_at( 6..7 )             #=> []
+#@end
+    p ary.values_at( 0, 3..5 )          #=> ["a", "d", "e", nil]
+
+#@# ([[m:Array#indexes]], [[m:Array#indices]]와 같습니다.)
+
+#@end
+
+#@since 1.8.0
+--- zip(*lists)  -> [[object]]
+--- zip(*lists) {|v1, v2, ...| ...} -> nil
+
+自身と引数に渡した配列の各要素からなる配列の配列を生成して返します。
+生成される配列の要素数は self の要素数と同じです。
+
+ブロック付きで呼び出した場合は、
+self と引数に渡した配列の各要素を順番にブロックに渡します。
+
+@param lists 配列を指定します。#@since 1.9.1
+             배열이 아닌 객체를 지정한 경우 to_ary 메소를 호출해
+             암묵적인 형변환을 시도합니다.to_ary メソッドに応答できない場
+             合は each メソッドによる暗黙の型変換を試みます。
+
+#@since 1.9.3
+@raise TypeError 引数に配列以外の(暗黙の型変換が行えない)オブジェクトを
+                 발생합니다.
+#@else
+@raise NoMethodError 引数に配列以外の(暗黙の型変換が行えない)オブジェク
+                     トを指定した場合に発生します。#@end
+
+#@else
+             배열이 아닌 객체를 지정하면
+             [[m:Enumerable#zip]] とは異なり、to_ary メソッドによる暗黙
+             の型変換を試みます。
+
+@raise TypeError 인수가 배열이 아니고 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+#@end
+
+예:
+    p [1,2,3].zip([4,5,6], [7,8,9])
+        # => [[1, 4, 7], [2, 5, 8], [3, 6, 9]]
+
+    p [1,2].zip([:a,:b,:c], [:A,:B,:C,:D])
+        # => [[1, :a, :A], [2, :b, :B]]
+
+    p [1,2,3,4,5].zip([:a,:b,:c], [:A,:B,:C,:D])
+        # => [[1, :a, :A], [2, :b, :B],
+        #     [3, :c, :C], [4, nil, :D], [5, nil, nil]]
+    
+    p [1,2,3].zip([4,5,6], [7,8,9]) {|ary|
+      p ary
+    }
+        # => [1, 4, 7]
+        #    [2, 5, 8]
+        #    [3, 6, 9]
+        #    nil
+#@end
+
+#@if (version == "1.8.7")
+--- choice        -> object | nil
+
+배열의 요소를 랜덤으로 1개 리턴합니다.
+
+배열이 비어있으면 nil을 리턴합니다.
+
+srand()가 적용됩니다.
+
+이 메소드는 Ruby 1.8.7와 Ruby 1.9.0에만 존재하는 메소드입니다.
+Ruby 1.9.1 이후의 버전에서는 Array#sample 메소드를 사용해주세요.
+
+예:
+
+  a = (1..10).to_a
+  p a.choice        #=>  9
+  p a.choice        #=> 10
+  p a               #=> [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+#@end
+
+#@since 1.9.1
+#@if (version != "1.9.0")
+--- sample        -> object | nil
+--- sample(n)     -> Array
+#@since 1.9.3
+--- sample(random: rng)    -> object | nil
+--- sample(n, random: rng) -> Array
+#@end
+
+配列の要素を1個(引数を指定した場合は自身の要素数を越えない範囲で n 個)
+ランダムに選んで返します。
+
+重複したインデックスは選択されません。そのため、自身がユニークな配列の
+場合は返り値もユニークな配列になります。
+
+配列が空の場合、無引数の場合は nil を、個数を指定した場合は空配列を返します。
+
+srand()가 적용됩니다.
+
+@param n 取得する要素の数を指定します。自身の要素数(self.length)以上の
+         値を指定した場合は要素数と同じ数の配列を返します。         정수가 아닌 객체를 지정하면 to_int 메소드로 암묵적인
+         형변환을 시도합니다.
+
+#@since 1.9.3
+@param rng 난수생성기를 지정합니다. 일반적으로 [[c:Random]] 객체를 사용합니다.
+#@since 2.0.0
+           選択する要素のインデックスを返す rand メソッドに応答するオブ
+           ジェクトであれば指定する事ができます。rand メソッドの引数に
+           は [[m:Random#rand]](max) のように選択可能なインデックスの最
+           大値が指定されます。#@else
+           0 以上 1 未満の値を返す rand メソッドに応答するオブジェクト
+           であれば指定する事ができます。#@end
+           [[m:Kernel.#rand]]、[[c:Random]] を使用しないオブジェクトを
+           指定した場合、[[m:Kernel.#srand]]の指定に影響されません。#@end
+
+@raise TypeError 引数 n に整数以外の(暗黙の型変換が行えない)オブジェク
+                 トを指定した場合に発生します。
+
+@raise ArgumentError 引数 n に負の数を指定した場合に発生します。
+
+예:
+
+  a = (1..10).to_a
+  p a.sample        #=>  9
+  p a.sample        #=> 10
+  p a.sample(3)     #=> [1, 9, 3]
+  p a               #=> [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+#@end
+#@end
+
+#@since 1.8.7
+--- cycle(n=nil) {|obj| block } -> nil
+#@since 1.9.1
+--- cycle(n=nil) -> Enumerator
+#@else
+--- cycle(n=nil) -> Enumerable::Enumerator
+#@end
+
+配列の全要素を n 回(nilの場合は無限に)繰り返しブロックを呼びだします。
+
+ブロックを省略した場合は、以上のような繰り返しを行う
+#@until 1.9.1
+[[c:Enumerable::Enumerator]]
+#@else
+[[c:Enumerator]]
+#@end
+を返します。
+
+@param n 繰り返したい回数を整数で指定します。         정수가 아닌 객체를 지정하면 to_int 메소드로 암묵적인
+         형변환을 시도합니다.
+
+@raise TypeError 인수가 정수가 아니며 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+
+예:
+
+   a = ["a", "b", "c"]
+   a.cycle {|x| puts x }  # print, a, b, c, a, b, c,.. forever.
+
+--- shuffle -> Array
+#@since 1.9.3
+--- shuffle(random: rng) -> Array
+#@end
+
+配列の要素をランダムシャッフルして，その結果を配列として返します。
+
+#@since 1.9.3
+引数に [[c:Random]] オブジェクトを渡すことでそのオブジェクトが
+生成する疑似乱数列を用いることができます。#@end
+
+예:
+
+   a = [ 1, 2, 3 ]           #=> [1, 2, 3]
+   a.shuffle                 #=> [2, 3, 1]
+#@since 1.9.3
+   rng = Random.new
+   rng2 = rng.dup # RNG를 복사
+   # 以下の2つは同じ結果を返す
+   [1,2,3].shuffle(random: rng)
+   [1,2,3].shuffle(random: rng2)
+#@end
+
+@see [[m:Array#shuffle!]]
+--- shuffle!-> self
+#@since 1.9.3
+--- shuffle!(random: rng) -> self
+#@end
+
+배열을 파괴적으로 섞습니다.
+
+#@since 1.9.3
+@param rng 난수생성기를 지정합니다. 일반적으로 [[c:Random]] 객체를 사용합니다.
+#@since 2.0.0
+           選択する要素のインデックスを返す rand メソッドに応答するオブ
+           ジェクトであれば指定する事ができます。rand メソッドの引数に
+           は [[m:Random#rand]](max) のように選択可能なインデックスの最
+           大値が指定されます。#@else
+           0 以上 1 未満の値を返す rand メソッドに応答するオブジェクト
+           であれば指定する事ができます。#@end
+           [[m:Kernel.#rand]]、[[c:Random]] を使用しないオブジェクトを
+           指定した場合、[[m:Kernel.#srand]]の指定に影響されません。#@end
+
+예:
+
+   a = [ 1, 2, 3 ]           #=> [1, 2, 3]
+   a.shuffle!#=> [2, 3, 1]
+   a                         #=> [2, 3, 1]
+
+@see [[m:Array#shuffle]]
+
+--- combination(n) {|c| block }    -> Array
+#@since 1.9.1
+--- combination(n)                 -> Enumerator
+#@else
+--- combination(n)                 -> Enumerable::Enumerator
+#@end
+
+サイズ n の組み合わせをすべて生成し、それを引数としてブロックを実行します。
+
+得られる組み合わせの順序は保証されません。ブロックなしで呼び出されると、組み合わせ
+#@since 1.9.1
+を生成する [[c:Enumerator]] オブジェクトを返します。#@else
+を生成する [[c:Enumerable::Enumerator]] オブジェクトを返します。#@end
+
+@param n 生成される配列のサイズを整数で指定します。         정수가 아닌 객체를 지정하면 to_int 메소드로 암묵적인
+         형변환을 시도합니다.
+
+@raise TypeError 인수가 정수가 아니며 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+
+예:
+
+    a = [1, 2, 3, 4]
+    a.combination(1).to_a  #=> [[1],[2],[3],[4]]
+    a.combination(2).to_a  #=> [[1,2],[1,3],[1,4],[2,3],[2,4],[3,4]]
+    a.combination(3).to_a  #=> [[1,2,3],[1,2,4],[1,3,4],[2,3,4]]
+    a.combination(4).to_a  #=> [[1,2,3,4]]
+    a.combination(0).to_a  #=> [[]]: one combination of length 0
+    a.combination(5).to_a  #=> []  : no combinations of length 5
+
+#@since 1.9.2
+@see [[m:Array#permutation]], [[m:Array#repeated_combination]]
+#@else
+@see [[m:Array#permutation]]
+#@end
+
+--- permutation(n = self.length) { |p| block }       -> Array
+#@since 1.9.1
+--- permutation(n = self.length)                     -> Enumerator
+#@else
+--- permutation(n = self.length)                     -> Enumerable::Enumerator
+#@end
+
+サイズ n の順列をすべて生成し，それを引数としてブロックを実行します。
+
+引数を省略した場合は配列の要素数と同じサイズの順列に対してブロックを実
+行します。
+
+得られる順列の順序は保証されません。ブロックなしで呼び出されると， 順列
+#@since 1.9.1
+を生成する [[c:Enumerator]] オブジェクトを返します。#@else
+を生成する [[c:Enumerable::Enumerator]] オブジェクトを返します。#@end
+
+@param n 생성하려는 배열의 사이즈를 정수로 지정합니다.
+         정수가 아닌 객체를 지정하면 to_int 메소드로 암묵적인
+         형변환을 시도합니다.
+
+@raise TypeError 인수가 정수가 아니며 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+
+예:
+
+    a = [1, 2, 3]
+    a.permutation.to_a     #=> [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]
+    a.permutation(1).to_a  #=> [[1],[2],[3]]
+    a.permutation(2).to_a  #=> [[1,2],[1,3],[2,1],[2,3],[3,1],[3,2]]
+    a.permutation(3).to_a  #=> [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]
+    a.permutation(0).to_a  #=> [[]]: one permutation of length 0
+    a.permutation(4).to_a  #=> []  : no permutations of length 4
+
+#@since 1.9.2
+@see [[m:Array#combination]], [[m:Array#repeated_permutation]]
+#@else
+@see [[m:Array#combination]]
+#@end
+
+--- product(*lists)    -> Array
+#@since 1.9.2
+--- product(*lists) { |e| ... }   -> self
+#@end
+
+レシーバの配列と引数で与えられた配列（複数可）のそれぞれから要素を1
+個ずつとって配列とし，それらのすべての配列を要素とする配列を返します。
+
+返される配列の長さは，レシーバと引数で与えられた配列の長さのすべての積にな
+ります。
+
+
+@param lists 배열을 지정합니다.여러개를 지정할 수 있습니다.
+
+예:
+
+   [1,2,3].product([4,5])     # => [[1,4],[1,5],[2,4],[2,5],[3,4],[3,5]]
+   [1,2].product([1,2])       # => [[1,1],[1,2],[2,1],[2,2]]
+   [1,2].product([3,4],[5,6]) # => [[1,3,5],[1,3,6],[1,4,5],[1,4,6],
+                              #     [2,3,5],[2,3,6],[2,4,5],[2,4,6]]
+   [1,2].product()            # => [[1],[2]]
+   [1,2].product([])          # => []
+
+#@since 1.9.2
+ブロックが与えられた場合、作成した配列の各要素を引数としてブロックを実
+行して self を返します。
+
+   a = []
+   [1,2,3].product([4,5]) {|e| a << e} # => [1,2,3]
+   a # => [[1,4],[1,5],[2,4],[2,5],[3,4],[3,5]]
+#@end
+
+#@end
+
+#@since 1.9.2
+--- repeated_combination(n) { |c| ... } -> Array
+--- repeated_combination(n)             -> Enumerator
+
+サイズ n の重複組み合わせをすべて生成し、それを引数としてブロックを実行
+します。
+
+得られる組み合わせの順序は保証されません。ブロックなしで呼び出されると、
+組み合わせを生成する Enumerator オブジェクトを返します。
+
+@param n 生成される配列のサイズを整数で指定します。          정수가 아닌 객체를 지정하면 to_int 메소드로 암묵적인
+         형변환을 시도합니다.
+
+@raise TypeError 인수가 정수가 아니며 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+
+예:
+
+    a = [1, 2, 3]
+    a.repeated_combination(1).to_a  #=> [[1], [2], [3]]
+    a.repeated_combination(2).to_a  #=> [[1,1],[1,2],[1,3],[2,2],[2,3],[3,3]]
+    a.repeated_combination(3).to_a  #=> [[1,1,1],[1,1,2],[1,1,3],[1,2,2],[1,2,3],
+                                    #    [1,3,3],[2,2,2],[2,2,3],[2,3,3],[3,3,3]]
+    a.repeated_combination(4).to_a  #=> [[1,1,1,1],[1,1,1,2],[1,1,1,3],[1,1,2,2],[1,1,2,3],
+                                    #    [1,1,3,3],[1,2,2,2],[1,2,2,3],[1,2,3,3],[1,3,3,3],
+                                    #    [2,2,2,2],[2,2,2,3],[2,2,3,3],[2,3,3,3],[3,3,3,3]]
+    a.repeated_combination(0).to_a  #=> [[]] # one combination of length 0
+
+@see [[m:Array#repeated_permutation]], [[m:Array#combination]]
+--- repeated_permutation(n) { |p| ... } -> Array
+--- repeated_permutation(n)             -> Enumerator
+
+サイズ n の重複順列をすべて生成し，それを引数としてブロックを実行します。
+
+得られる順列の順序は保証されません。ブロックなしで呼び出されると， 順列
+を生成する Enumerator オブジェクトを返します。
+
+@param n 생성하려는 배열의 사이즈를 정수로 지정합니다.          정수가 아닌 객체를 지정하면 to_int 메소드로 암묵적인
+         형변환을 시도합니다.
+
+@raise TypeError 인수가 정수가 아니며 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+
+예:
+
+    a = [1, 2]
+    a.repeated_permutation(1).to_a  #=> [[1], [2]]
+    a.repeated_permutation(2).to_a  #=> [[1,1],[1,2],[2,1],[2,2]]
+    a.repeated_permutation(3).to_a  #=> [[1,1,1],[1,1,2],[1,2,1],[1,2,2],
+                                    #    [2,1,1],[2,1,2],[2,2,1],[2,2,2]]
+    a.repeated_permutation(0).to_a  #=> [[]] # one permutation of length 0
+
+@see [[m:Array#repeated_combination]], [[m:Array#permutation]]
+--- keep_if {|item| ... } -> self
+--- keep_if -> Enumerator
+
+ブロックが false を返した要素を削除します。
+
+   a = %w{ a b c d e f }
+   a.keep_if {|v| v =~ /[aeiou]/}   # => ["a", "e"]
+   a # => ["a", "e"]
+
+[[m:Array#select!]] と同様に自身を上書きしますが、削除する要素がなかっ
+た場合には修正を行いません。
+
+   a = %w{ a b c d e f }
+   a.keep_if {|v| v =~ /[a-z]/ }   # => ["a", "b", "c", "d", "e", "f"]
+   a # => ["a", "b", "c", "d", "e", "f"]
+
+ブロックが与えられなかった場合は、自身と keep_if から生成した
+[[c:Enumerator]] オブジェクトを返します。
+
+@see [[m:Array#select!]]
+--- select!{|item| block } -> self | nil
+--- select!-> Enumerator
+
+ブロックが false を返した要素を自身から削除します。
+変更があった場合は self を、
+変更がなかった場合には nil を返します。
+
+   a = %w{ a b c d e f }
+   a.select!{|v| v =~ /[a-z]/ }   # => nil
+   a # => ["a", "b", "c", "d", "e", "f"]
+
+ブロックが与えられなかった場合は、自身と select! から生成した
+[[c:Enumerator]] オブジェクトを返します。
+
+@see [[m:Array#keep_if]]
+--- rotate(cnt = 1) -> Array
+
+cnt で指定したインデックスの要素が先頭になる配列を新しく作成します。
+cnt より前の要素は末尾に移動します。cnt に負の数を指定した場合、逆の操
+作を行います。
+
+@param cnt 先頭にする要素のインデックスを指定します。指定しなかった場合
+           は 1 になります。           정수가 아닌 값이 인덱스로 주어지면 to_int 메소드를 실행해
+           암묵적인 형변환을 시도합니다.
+
+@raise TypeError 인수가 정수가 아니며 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+
+예:
+
+   a = [ "a", "b", "c", "d" ]
+   a.rotate         # => ["b", "c", "d", "a"]
+   a                # => ["a", "b", "c", "d"]
+   a.rotate(2)      # => ["c", "d", "a", "b"]
+   a.rotate(-1)     # => ["d", "a", "b", "c"]
+   a.rotate(-3)     # => ["b", "c", "d", "a"]
+
+@see [[m:Array#rotate!]]
+--- rotate!(cnt = 1) -> self
+
+cnt で指定したインデックスの要素が先頭になるように自身の順番を変更しま
+す。cnt より前の要素は末尾に移動します。cnt に負の数を指定した場合、逆
+の操作を行います。
+
+@param cnt 先頭にする要素のインデックスを指定します。指定しなかった場合
+           は 1 になります。           정수가 아닌 값이 인덱스로 주어지면 to_int 메소드를 실행해
+           암묵적인 형변환을 시도합니다.
+
+@raise TypeError 인수가 정수가 아니며 암묵적인 형변환도 불가능한 객체일 때
+                 발생합니다.
+
+예:
+
+   a = [ "a", "b", "c", "d" ]
+   a.rotate!#=> ["b", "c", "d", "a"]
+   a                #=> ["b", "c", "d", "a"]
+   a.rotate!(2)     #=> ["d", "a", "b", "c"]
+   a.rotate!(-3)    #=> ["a", "b", "c", "d"]
+
+@see [[m:Array#rotate]]
+#@end
+
+#@since 2.0.0
+--- bsearch { |x| ... } -> object | nil
+
+ブロックの評価結果で範囲内の各要素の判定を行い、条件を満たす値を二分探
+索(計算量は O(log n))で検索します。要素が見つからない場合は nil を返し
+ます。self はあらかじめソートしておく必要があります。
+
+本メソッドはブロックを評価した結果により以下のいずれかのモードで動作し
+ます。
+
+ * find-minimum 모드
+ * find-any 모드
+
+find-minimum モード(特に理由がない限りはこのモードを使う方がいいでしょ
+う)では、条件判定の結果を以下のようにする必要があります。
+
+ * 求める値がブロックパラメータの値か前の要素の場合: true を返す
+ * 求める値がブロックパラメータより後の要素の場合: false を返す
+
+ブロックの評価結果が true になる最初の要素を返すか、nil を返します。
+
+  ary = [0, 4, 7, 10, 12]
+  ary.bsearch {|x| x >=   4 } # => 4
+  ary.bsearch {|x| x >=   6 } # => 7
+  ary.bsearch {|x| x >=  -1 } # => 0
+  ary.bsearch {|x| x >= 100 } # => nil
+
+find-any モードは [[man:bsearch(3)]] のように動作します。ブロックは真偽値
+ではなく、以下のような数値を返す必要があります。求める要素が配列の i 番目
+から j-1 番目までに入っているとします。またブロックパラメータの値の
+インデックスを k とします。
+
+ * ブロックパラメータの値が求める値の範囲よりも小さい（0 <= k < i）場合: 正の数を返す
+ * ブロックパラメータの値が求める値の範囲に合致する（i <= k < j）場合: 0 を返す
+ * ブロックパラメータの値が求める値の範囲よりも大きい（j <= k < self.size）場合: 負の数を返す
+
+ブロックの評価結果が 0 になるいずれかの要素を返すか、nil を返します。
+
+  ary = [0, 4, 7, 10, 12]
+  # 4 <= v < 8 になる要素を検索
+  ary.bsearch {|x| 1 - x / 4 } # => 4 or 7
+  # 8 <= v < 10 になる要素を検索
+  ary.bsearch {|x| 4 - x / 2 } # => nil
+
+上記の 2 つのモードを混在して使用しないでください(ブロックの評価結果は
+常に true/false、数値のいずれかを一貫して返すようにしてください)。
+また、二分探索の各イテレーションで値がどのような順序で選ばれるかは
+未規定です。
+
+@raise TypeError ブロックの評価結果が true、false、nil、数値以外であっ
+                 た場合に発生します。
+
+@raise LocalJumpError ブロックを指定しなかった場合に発生します。
+
+@see [[m:Range#bsearch]], [[url:http://jp.rubyist.net/magazine/?0041-200Special-note#l15]]
+#@end

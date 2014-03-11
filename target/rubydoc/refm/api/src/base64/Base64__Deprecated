@@ -1,0 +1,26 @@
+#@since 1.8.2
+
+= module Base64::Deprecated
+
+[[c:Base64]] 모듈에서 정의된 모듈 함수들을
+[[c:Kernel]] 모듈에 include하기 위한 모듈입니다.일반적으로 사용자가 직접 사용할 일은 없습니다.이후 폐기될 가능성이 있습니다.
+
+== Module Functions
+
+--- decode64(str) -> String
+
+[[m:Base64.#decode64]]와 같습니다.
+
+--- encode64(str) -> String
+
+[[m:Base64.#encode64]]와 같습니다.
+
+--- decode_b(str) -> String
+
+[[m:Base64.#decode_b]]와 같습니다.
+
+--- b64encode(bin, len = 60) -> ()
+
+[[m:Base64.#b64encode]]와 같습니다.
+
+#@end

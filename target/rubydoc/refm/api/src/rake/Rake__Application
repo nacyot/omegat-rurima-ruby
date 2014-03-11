@@ -1,0 +1,207 @@
+= class Rake::Application
+include Rake::TaskManager
+
+Rake에서 사용하는 메인 클래스입니다.
+
+명령행에서 rake 명령어를 입력하면, 이 클래스가 만들어지고 실행됩니다.
+
+== Public Instance Methods
+
+--- add_import(file_name)
+
+주어진 파일을 읽어올 파일 목록에 추가합니다.
+
+@param file_name 읽어올 파일의 이름을 지정합니다.
+
+--- add_loader(ext, loader)
+
+与えられた拡張子で終わるファイル名のファイルをロードするためのローダーを
+自身に追加します。
+
+@param ext 확장자를 지정합니다.
+
+@param loader 로더를 지정합니다.
+
+--- collect_tasks(argv) -> Array
+
+명령행의 인수를 분석해서 실행하려는 태스크의 목록을 리턴합니다.
+
+실행하려는 태스크가 지정되지 않았으면 기본 태스크를 리턴합니다.
+이 때 환경변수의 분석도 함께 이루어집니다.
+
+--- const_warning(const_name)
+
+トップレベルで定数を使用している場合に警告を表示します。
+
+--- display_prerequisites
+
+태스크에 태스크에 의존하고 있는 태스크를 출력합니다.
+
+--- display_tasks_and_comments
+
+태스크와 주석을 출력합니다.
+
+--- dynamic_width -> Fixnum
+
+터미널의 넓이를 계산합니다.
+
+--- dynamic_width_stty
+
+[[man:stty(1)]]을 사용해 터미널의 넓이를 계산합니다.
+
+--- dynamic_width_tput
+
+[[man:tput(1)]]를 사용해 터미널의 넓이를 계산합니다.
+
+--- find_rakefile_location -> Array | nil
+
+Rakefile とそのファイルがあったディレクトリのペアを返します。
+
+--- handle_options
+
+コマンドラインオプションを [[c:OptionParser]] に登録します。
+
+--- have_rakefile -> String | nil
+
+Rakefile がカレントディレクトリに存在する場合はそのファイル名を返します。그렇지 않으면 nil을 리턴합니다.
+
+@see [[m:Rake::Application::DEFAULT_RAKEFILES]]
+
+--- init(app_name = 'rake')
+
+コマンドラインオプションとアプリケーション名を初期化します。
+
+--- invoke_task(task_string)
+#@# private?
+
+与えられた文字列を解析してタスクを実行します。
+
+@param task_string タスク名とそれに与えるパラメータをあらわす文字列を指定します。
+
+--- load_imports
+
+ロード予定のファイルを全てロードします。
+
+既にロード済みのファイルはロードしません。
+
+--- load_rakefile
+
+Rakefile を探してロードします。
+
+--- name -> String
+
+アプリケーションの名前を返します。通常は 'rake' という名前を返します。
+
+--- options -> OpenStruct
+
+コマンドラインで与えられたアプリケーションのオプションを返します。
+
+--- original_dir -> String
+
+rake コマンドを実行したディレクトリを返します。
+
+--- parse_task_string(string) -> [String, Array]
+
+与えられた文字列を解析して、タスク名とそれに与えるパラメータのペアを返します。
+
+@param string タスク名とそれに与えるパラメータのペアを返します。
+
+--- rake_require(file_name, paths = $LOAD_PATH, loaded = $") -> bool
+
+[[m:Kernel#require]] に似ていますが、*.rb ファイルではなく *.rake ファイルを探索します。
+
+@param file_name ロードするファイル名を指定します。
+
+@param paths ロードパスを指定します。
+
+@param loaded ロード済みのファイルリストを指定します。
+
+@raise LoadError 指定されたファイルが見つからなかった場合に発生します。
+
+--- rakefile -> String
+
+実際に使用されている Rakefile の名前を返します。
+
+--- rakefile_location -> String
+
+Rakefile のパスを返します。
+
+--- raw_load_rakefile
+
+Rakefile をロードします。
+
+@raise RuntimeError Rakefile が見つからなかった場合に発生します。
+
+--- run
+
+Rake アプリケーションを実行します。
+
+このメソッドは以下の 3 ステップを実行します。
+
+ * コマンドラインオプションを初期化します。[[m:Rake::Application#init]]
+ * タスクを定義します。[[m:Rake::Application#load_rakefile]]
+ * コマンドラインで指定されたタスクを実行します。[[m:Rake::Application#top_level]]
+
+--- standard_exception_handling{ ... }
+
+与えられたブロックを評価する際に発生する標準的な例外を補足して
+アプリケーションを終了させます。
+
+--- standard_rake_options -> Array
+
+Rake コマンドで使用する標準的なコマンドラインオプションのリストを返します。
+
+--- system_dir -> String
+
+システム全体の Rakefile が格納されているディレクトリを返します。
+
+環境変数 RAKE_SYSTEM で設定することができます。
+
+--- terminal_width -> Fixnum
+
+ターミナルの幅を返します。
+
+環境変数 RAKE_COLUMNS で指定することが出来ます。
+
+--- top_level
+
+Rake アプリケーションに与えられたトップレベルのタスク
+(コマンドラインで指定されたタスク) を実行します。
+
+--- top_level_tasks -> Array
+
+コマンドラインで指定されたタスクのリストを返します。
+
+--- truncate(string, width) -> String
+
+与えられた文字列を与えられた幅で切り詰めます。
+
+--- truncate_output?
+
+--- tty_output=(tty_output_state)
+
+TTY に対する出力状態を上書きします。
+
+大抵の場合、テストのために使用します。
+
+@param tty_output_state 変更後の状態を指定します
+
+--- tty_output?-> bool
+
+TTY に出力している場合は真を返します。그렇지 않으면 false를 리턴합니다.
+
+--- unix?-> bool
+
+現在のプラットフォームが UNIX 系である場合、真を返します。그렇지 않으면 false를 리턴합니다.
+
+--- windows?-> bool
+
+現在のプラットフォームが Windows 系である場合、真を返します。그렇지 않으면 false를 리턴합니다.
+
+#@#== Constants
+
+--- DEFAULT_RAKEFILES -> Array
+
+デフォルトで Rakefile として扱うファイル名の配列を返します。
+
+'rakefile', 'Rakefile', 'rakefile.rb', 'Rakefile.rb' が指定されています。

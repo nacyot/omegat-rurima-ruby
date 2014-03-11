@@ -1,0 +1,7 @@
+= module TkSystemMenu
+
+
+== Instance Methods
+
+--- initialize(parent, keys = nil)
+#@todo

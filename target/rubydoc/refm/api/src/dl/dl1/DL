@@ -1,0 +1,284 @@
+= module DL
+
+UNIX의 [[man:dlopen(3)]]이나 Windows의 LoadLibrary() 동적 링커에 접근하는 저레벨 인터페이스를 제공하는 모듈입니다.
+
+모듈 DL은 3개의 클래스로 구성되어 있습니다.
+
+: [[c:DL::Symbol]] 
+  동적 라이브러리 함수의 래퍼 클래스입니다.
+: [[c:DL::PtrData]] 
+  C의 포인터 같은 메모리 블록을 나타내는 클래스입니다.
+: [[c:DL::Handle]] 
+  열려있는 동적 라이브러리를 나타내는 클래스입니다.
+
+#@#현재 dl2의 Ruby 1.8 판도 제작중에 있습니다.
+#@#Ruby 1.9에는 이미 dl2가 표준 라이브러리 dl로 포함되어있습니다.
+#@#dl2의 문서는
+#@#[[url:http://rubyforge.org/cgi-bin/viewcvs.cgi/ruby-dl2/doc/?root=ruby-dl2]]
+#@#를 참조해주세요.
+
+=== Type specifiers
+
+プロトタイプは以下の型修飾子から成ります。プロトタイプの最初の要素は戻り値
+の型を意味します。残りの要素は各引数の型を意味します。
+
+: C
+    문자 (char)
+: c
+    문자를 가리키는 포인터 (char *)
+: H
+    short 정수  (short)
+: h
+    short 정수를 가리키는 포인터 (short *)
+: I
+    정수 (char, short, int)
+: i
+    정수를 가리키는 포인터 (char *, short *, int *)
+: L
+    long int
+: l
+    long int를 가리키는 포인터 (long *)
+: F
+    실수 (float)
+: f
+    실수를 가리키는 포인터 (float *)
+: D
+    실수 (double)
+: d
+    실수를 가리키는 포인터(double *)
+: S
+    변경이 불가능한(immutable) 문자열 (const char *)
+: s
+    변경이 가능한(mutable) 문자열 (char *)
+: A
+    배열 (const type[])
+: a
+    변경이 가능한(mutable) 배열 (type[])
+: P
+    포인터 (void *)
+: p
+    변경이 가능한(mutable) 포인터 (void *)
+: 0
+    void 関数 (これはプロトタイプの最初の文字でなければならない)
+
+cbtype は型修飾子 0, C, I, H, L, F, D, S そして P から成ります。예를 들어
+
+  DL.callback('IPP'){|ptr1,ptr2|
+    str1 = ptr1.ptr.to_s
+    str2 = ptr2.ptr.to_s
+    str1 <=> str2
+  }
+
+=== Ruby 객체를 C 타입으로 변환
+
+[[m:DL.#callback]] や [[m:DL::Handle#sym]] で指定した
+型指定子に従って Ruby のオブジェクトと C の型は相互に変換されます。
+
+
+== Singleton Methods
+
+--- last_error
+--- last_error=
+#@todo
+
+--- win32_last_error
+--- win32_last_error=
+#@todo
+
+#@#== Constants
+
+--- FuncTable
+#@todo
+
+--- RTLD_GLOBAL
+#@todo
+
+--- RTLD_LAZY
+#@todo
+
+--- RTLD_NOW
+#@todo
+
+--- ALIGN_INT
+#@todo
+
+--- ALIGN_LONG
+#@todo
+
+--- ALIGN_FLOAT
+#@todo
+
+--- ALIGN_SHORT
+#@todo
+
+--- ALIGN_DOUBLE
+#@todo
+
+--- ALIGN_VOIDP
+#@todo
+
+--- MAX_ARG
+#@todo
+
+--- DLSTACK
+#@todo
+
+--- FREE
+#@todo
+
+[[man:free(3)]]를 나타내는 [[c:DL::Symbol]]입니다.
+この定数に新たに DL::Symbol を代入しても、DL::PtrData にデフォルトでセットされる
+free 関数が変わることはありません。
+
+== Module Functions
+
+--- dlopen(lib)                    -> DL::Handle
+--- dlopen(lib) {|handle| ... }    -> DL::Handle
+
+ダイナミックライブラリ lib をロードし、
+[[c:DL::Handle]] として返します。
+
+ブロックが与えられている場合は、[[c:DL::Handle]] 引数として
+与えられたブロックを実行します。[[c:DL::Handle]] を返します。
+
+[[m:DL::Handle.new]](lib) と等価です。
+
+@param lib ロードしたいライブラリを文字列で与えます。
+
+@raise RuntimeError [[man:dlopen(3)]] に失敗した時に発生します。
+
+--- callback(type)         -> DL::Symbol
+--- define_callback(type)  -> DL::Symbol
+#@todo
+
+Cレベルのコールバック関数を定義し、その関数(へのポインタ)を保持した
+[[c:DL::Symbol]] を返します。
+
+@param type コールバック関数の型指定子を与えます。
+
+@raise DL::DLError 定義できるコールバック関数の数には制限があります。それを越えると、DL::DLError が発生します。
+
+ require 'dl/import'
+ strlast = DL.callback('IS'){|s|
+   s[-1]
+ }
+ 
+ module M
+   extend DL::Importable
+   dlload "./libtest.so"
+   extern "int call(void *, const char*)"
+ end
+ p LIBC.call(strlast, "abcd").chr #=> "d"
+
+
+//emlist{
+ /* libtest.so */ 
+ int call(int (*cb)(const char*), const char* s){
+   return (*cb)(s);
+ }
+//}
+
+--- remove_callback(sym)    -> nil
+
+콜백 함수 sym을 [[m:DL::FuncTable]]에서 삭제합니다.
+#@#sym은 GC 대상이 됩니다.
+이 메소드를 호출하고 나면 sym.call을 호출할 수 없습니다.
+
+@param sym 함수 테이블에서 삭제하려는 [[c:DL::Symbol]] 객체를 지정합니다.
+
+--- malloc(size)    -> DL::PtrData
+
+size 바이트만큼 메모리를 확보하고
+해당하는 메모리를 가리키는 [[c:DL::PtrData]] 객체를 리턴합니다.
+
+この返り値には、[[m:DL::FREE]] が free 関数としてセットされています。
+
+@param size 필요한 메모리를 바이트 단위로 지정합니다.
+
+--- sizeof(type)    -> Integer
+
+주어진 타입(type)의 사이즈를 리턴합니다.
+
+sizeof("C") + sizeof("L") 는 sizeof("CL") 과 같지 않습니다.
+後者は構造体 struct foo { char c; long l; } の
+十分なサイズを返すと推定されますが、
+そのサイズは C の sizeof(foo) と同じではないかもしれません。つまり、sizeof メソッドは独自にアラインメントを考慮してサイズを決定
+しますが、 C 言語のそれとは異なるかもしれません。
+
+sizeof("L3") のように型の後に数字を付けることもできます。
+指定できる型については [[c:DL]] を参照してください。
+
+@param type 型指定子を文字列で与えます。
+
+@raise DL::DLTypeError 定められた文字以外を型指定子として与えると発生します。
+
+--- strdup(str)    -> DL::PtrData
+
+文字列 str を複製し、その新しい文字列へのポインタ
+[[c:DL::PtrData]] オブジェクトを返します。
+
+この返り値には、[[m:DL::FREE]] が free 関数としてセットされています。
+
+@param str 문자열을 지정합니다.
+
+= class DL::DLError < StandardError
+DL に関する一般的なエラーが発生したときに投げられます。
+
+= class DL::DLTypeError < DL::DLError
+型に関するエラーが発生したときに投げられます。
+
+= reopen String
+
+
+== Instance Methods
+
+--- to_ptr    -> DL::PtrData
+
+自身を複製し、複製した文字列を指す [[c:DL::PtrData]] を返します。
+この返り値には、[[m:DL::FREE]] が free 関数としてセットされています。
+
+ s = 'abc'
+ sp = s.to_ptr
+ p sp.size #=> 3
+ p sp.to_s #=> "abc"
+ p sp[0] = 'A'
+ p sp.to_s #=> "Abc"
+ p s       #=> "abc"
+
+= reopen Array
+
+
+== Instance Methods
+
+--- to_ptr          -> nil | DL::PtrData 
+--- to_ptr(type)    -> nil | DL::PtrData
+
+自身の各要素を指すポインタの配列を生成し、それへのポインタ [[c:DL::PtrData]] を返します。
+この返り値には、[[m:DL::FREE]] が free 関数としてセットされています。
+自身の長さが 0 なら nil を返します。
+
+self のすべての要素は同じクラスでなければならず、
+Integer、Float、String、Data、Nil のいずれかでなければいけません。
+
+要素のクラスが String である場合、各要素は複製されます。
+
+ require 'dl/import'
+ 
+ ptr = ['a', 'b', 'c'].to_ptr
+ p ptr.size #=> 12
+ p ptr.to_a('P').map{|s| s.to_s } #=> ["a", "b", "c"]
+
+@param type self の要素の型を文字で指定します。[[c:DL]] の型指定子の項を参照して下さい。
+
+@raise DL::DLTypeError 定められた文字以外を型指定子として与えると発生します。また、与えられた型と自身の要素が一致しないと発生します。
+
+= reopen IO
+
+
+== Instance Methods
+
+--- to_ptr    -> DL::PtrData
+
+self를 가리키는 [[c:DL::PtrData]]를 리턴합니다.C에서「FILE *」에 해당합니다.
+
+@raise IOError self가 닫혀있으면 발생합니다.

@@ -1,0 +1,62 @@
+#@since 1.8.0
+= class NoMethodError < NameError
+
+정의되어있지 않은 메소드를 호출했을 때 발생하는 예외입니다.
+
+예:
+
+  self.bar
+  => -:1: undefined method `bar' for #<Object:0x401a6c40> (NoMethodError)
+
+메소드 호출 형식이 아닌 경우에는 [[c:NameError]]가 발생합니다.
+
+예:
+
+  bar
+  => -:1: undefined local variable or method `bar' for #<Object:0x401a6c40> (NameError)
+
+
+== Class Methods
+
+--- new(error_message = "", name = nil, args = nil) -> NoMethodError
+
+예외 객체를 리턴합니다.
+
+@param error_message 에러 메시지를 나타내는 문자열을 지정합니다.
+
+@param name 정의되어 있지 않았던 변수나 상수의 이름
+
+@param args 메소드가 호출될 때 넘겨진 인수입니다.
+
+
+예:
+
+  nom = NoMethodError.new("message", "foo", [1,2,3])
+  p nom.name
+  p nom.args
+  
+  # => "foo"
+  [1, 2, 3]
+
+
+== Instance Methods
+
+--- args -> [object]
+
+메소드 호출에 사용된 인수를 배열로 리턴합니다.
+
+예:
+
+  begin
+    foobar(1,2,3)
+  rescue NoMethodError
+    p $!    p $!.name
+    p $!.args
+  end
+  
+  # => #<NoMethodError: undefined method `foobar' for main:Object>
+       :foobar
+       [1, 2, 3]
+
+#@end
+

@@ -1,0 +1,326 @@
+= class Fixnum < Integer
+
+[[c:Bignum]]과 마찬가지로 수치를 다루는 클래스 입니다.
+계산 결과가 Fixnum의 범위를 넘어선 값이면 
+자동적으로 그 값이 [[c:Bignum]]으로 화장됩니다.
+
+マシンのポインタのサイズに収まる長さの固定長整数で、
+ほとんどのマシンでは 31 ビット幅です。
+
+
+=== 파괴적인 변경
+
+Ruby의 Fixnum 클래스는 immutable합니다.
+따라서 객체 자체를 파괴적으로 변경할 수 없습니다.
+[[c:Bignum]]도 마찬가지입니다.
+
+
+예:
+
+  100000.class             # => Fixnum
+  100000 * 100000          # => 100000000
+  (100000 * 100000).class  # => Bignum
+
+
+
+== Instance Methods
+
+--- [](nth) -> Fixnum
+
+nth 번째 비트(최하위 비트(LSB)는 0번째) @@@
+
+@param nth 몇 번째 비트를 기준으로 할 지 지정합니다.
+@return 1 또는 0
+
+self[nth] = bit 와 같은 대입을 지원하지 않는 건 Numeric과 관련된 클래스들이 
+immutable한 특징을 가지기 때문입니다.
+
+--- +(other) -> Fixnum | Bignum | Float
+
+산술 연산자.self에 other를 더한 값을 리턴합니다.
+
+@param other + 계산에 있어 오른쪽에 들어가는 값
+@return 계산 결과
+
+--- -(other) -> Fixnum | Bignum | Float
+
+산술 연산자.self에서 other를 뺀 값을 리턴합니다.
+
+@param other + 계산에 있어 오른쪽에 들어가는 값
+@return 계산 결과
+
+--- -@    -> Integer
+
+단항 연산자 -입니다.
+self의 부호를 바꿔서 리턴합니다.
+
+--- *(other) -> Fixnum | Bignum | Float
+
+산술 연산자.self에 other을 곱한 값을 리턴합니다.
+
+@param other + 계산에 있어 오른쪽에 들어가는 값
+@return 계산 결과
+
+--- /(other) -> Fixnum | Bignum | Float
+--- div(other) -> Fixnum | Bignum | Float
+
+산술 연산자.self를 other로 나눈 값을 리턴합니다.
+
+@param other + 계산에 있어 오른쪽에 들어가는 값
+@return 계산 결과
+
+--- %(other) -> Fixnum | Bignum | Float
+--- modulo(other) -> Fixnum | Bignum | Float
+
+산술 연산자.self를 other로 나눈 나머지를 리턴합니다.
+
+@param other + 계산에 있어 오른쪽에 들어가는 값
+@return 계산 결과
+
+--- divmod(other) -> [Integer, Numeric]
+
+self를 other로 나눈 몫 q와 나머지 r을 가지는 [q, r] 배열로 리턴합니다. 몫 q는 항상 정수이지만 나머지 r은 정수가 아닐 수도 있습니다.
+
+@param other self를 나누는 수.
+
+@see [[m:Numeric#divmod]]
+
+#@until 1.9.1
+--- quo(other) -> Float
+
+self를 other로 나눈 몫을 리턴합니다.
+몫의 정수 부분을 구하려면 [[m:Fixnum#div]]를 사용해주세요.
+
+#@since 1.8.7
+[[m:Fixnum#fdiv]]와 차이점에 대해선 [[m:Numeric#quo]]를 참조해주세요.
+#@end
+
+@param other self를 나누는 수를 지정합니다.
+
+@see [[m:Numeric#quo]]
+#@end
+
+#@since 1.8.7
+#@since 1.9.1
+--- fdiv(other) -> Float | Complex
+#@else
+--- fdiv(other) -> Float
+#@end
+
+self를 other로 나눈 몫을 [[c:Float]]로 리턴합니다.
+#@since 1.9.1
+단  [[c:Complex]]에 @@@その場合も成分は Float になります。#@end
+
+@param other self를 나누는 수를 지정합니다.
+
+#@since 1.9.1
+@see [[m:Numeric#quo]]
+#@else
+@see [[m:Fixnum#quo]]
+#@end
+#@end
+
+--- **(other) -> Fixnum | Bignum | Float
+
+산술 연산자.멱승(제곱)을 계산합니다.
+
+@param other + 계산에 있어 오른쪽에 들어가는 값
+@return 계산 결과
+
+  2 ** 3 # => 8
+  2 ** 0 # => 1
+  0 ** 0 # => 1
+
+--- <=>(other) -> Fixnum
+
+self와 other을 비교해서 self가 크면 1,
+같으면 0, 작으면 -1을 리턴합니다.
+
+@param other 비교하려는 수
+@return      -1, 0, 1
+
+  1 <=> 2 #=> -1
+  1 <=> 1 #=> 0
+  2 <=> 1 #=> 1
+
+--- ==(other) -> bool
+
+비교 연산자같은 값인지 판정합니다.
+
+@Param other 비교하려는 수치를 지정합니다.
+@return self와 other이 같으면 true를 리턴합니다.
+             그렇지 않으면 false를 리턴합니다.
+
+--- <(other)  -> bool
+
+비교 연산자other보다 작은 값인지 비교합니다.
+
+@param other 비교하려는 수치를 지정합니다.
+@return self보다 other의 값이 크면 true를 리턴합니다.
+             그렇지 않으면 false를 리턴합니다.
+
+--- <=(other) -> bool
+
+비교 연산자other보다 작거나 같은 값인지 비교합니다.
+
+@param other 비교하려는 수치를 지정합니다.
+@return self보다 other의 값이 같거나 크면 
+             true를 리턴합니다.
+             그렇지 않으면 false를 리턴합니다.
+
+--- >(other)  -> bool
+
+비교 연산자other보다 큰지 비교합니다.
+
+@param other 비교하려는 수치를 지정합니다.
+@return self가 other보다 크면 true를 리턴합니다.
+             그렇지 않으면 false를 리턴합니다.
+
+--- >=(other) -> bool
+
+비교 연산자other보다 크거나 같은지 비교합니다.
+
+@param other 비교하려는 수치를 지정합니다.
+@return self가 other보다 크거나 같으면
+             true를 리턴합니다.
+             그렇지 않으면 false를 리턴합니다.
+
+--- ~        -> Fixnum | Bignum
+비트 연산자.否定を計算します。
+
+  ~1  #=> -2
+  ~3  #=> -4
+  ~-4 #=> 3
+
+--- |(other) -> Fixnum | Bignum
+비트 이항 연산자논리합을 계산합니다.
+
+@param other 수치를 지정합니다.
+
+  1 | 1 #=> 1
+  2 | 3 #=> 3
+
+--- &(other) -> Fixnum | Bignum
+비트 이항연산자논리곱을 계산합니다.
+
+@param other 수치를 지정합니다.
+
+  1 & 1 #=> 1
+  2 & 3 #=> 2
+
+--- ^(other) -> Fixnum | Bignum
+비트 이항연산자베터적논리합을 계산합니다.
+
+@param other 수치를 지정합니다.
+
+  1 ^ 1 #=> 0
+  2 ^ 3 #=> 1
+
+--- <<(bits) -> Fixnum | Bignum
+
+시프트 연산자bits만큼 비트를 왼쪽으로 시프트합니다.
+
+@param bits 시프트하고자 하는 비트수.
+
+    printf("%#b\n", 0b0101 << 1) #=> 0b1010
+    p -1 << 1 #=> -2
+
+--- >>(bits) -> Fixnum | Bignum
+시프트 연산자.bits만큼 오른쪽으로 시프트합니다.
+
+右シフトは、符号ビット(最上位ビット(MSB))が保持されます。
+bitsが実数の場合、小数点以下を切り捨てた値でシフトします。
+
+@param bits 시프트하고자 하는 비트수.
+
+    printf("%#b\n", 0b0101 >> 1) #=> 0b10
+    p -1 >> 1 #=> -1
+
+#@until 1.9.1
+--- id2name -> String | nil
+
+オブジェクトの整数値 self を、ある [[c:Symbol]] オブジェクトに対応する整数値とみなした上で、
+そのシンボルを示す文字列を返します。
+整数に対応するシンボルは必ずしも存在せず、その場合は nil を返します。
+
+[[m:Symbol#to_i]] の逆変換のようですが、
+返すのはシンボルではなく文字列です。
+
+@return 객체명을 나타내는 문자열이나 nil
+
+예:
+
+  :foo.to_i      #=> 14585
+  14585.id2name  #=> "foo"
+  1.id2name      #=> nil
+
+[[m:Fixnum#to_sym]] で得たシンボルに対して
+[[m:Symbol#to_s]] で文字列にしたものとおおかた一致しますが、
+nil のときの挙動が異なります。
+
+예:
+
+  1.id2name     #=> nil
+  1.to_sym.to_s #=> ""
+
+#@end
+--- size -> Fixnum
+
+整数の実装上のサイズをバイト数で返します。
+
+現在の実装では [[c:Fixnum]] は、sizeof(long) 固定(多くの 32
+bit マシンで 4 バイト)、[[c:Bignum]]は、システム依存です。
+
+    p 1.size
+    p 0x1_0000_0000.size
+    # => 4
+         8
+
+--- to_f -> Float
+
+値を浮動小数点数([[c:Float]])に変換します。
+
+#@until 1.9.1
+--- to_sym -> Symbol | nil
+
+オブジェクトの整数値 self に対応する [[c:Symbol]] オブジェク
+トを返します。整数に対応するシンボルが存在しない時には nil
+を返します。
+
+[[m:Symbol#to_i]] の逆変換ととらえることができます。
+
+@return シンボルか nil
+
+예:
+
+  :foo.to_i     #=> 14585
+  14585.to_sym  #=> :foo
+  1.to_sym      #=> nil
+
+#@end
+
+#@since 1.8.7
+--- zero?-> bool
+
+self が 0 の場合に true を返します。그렇지 않으면 false를 리턴합니다.
+
+--- odd?-> bool
+
+self が奇数の場合に true を返します。그렇지 않으면 false를 리턴합니다.
+
+--- even?-> bool
+
+self が偶数の場合に true を返します。그렇지 않으면 false를 리턴합니다.
+
+#@end
+
+#@since 1.9.1
+--- abs -> Fixnum | Bignum
+--- magnitude -> Fixnum | Bignum
+
+self の絶対値を返します。
+
+--- succ -> Fixnum | Bignum
+
+self의 다음 정수를 리턴합니다.
+#@end

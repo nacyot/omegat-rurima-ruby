@@ -1,0 +1,9 @@
+= class Enumerable::Enumerator < Object
+
+#@until 1.9.1
+include Enumerable
+
+이 클래스는 Enumerator로 변경되었습니다.
+Enumerable::Enumerator와 호환성을 위해 남아있습니다#@end
+
+#@include(Enumerator.inside)

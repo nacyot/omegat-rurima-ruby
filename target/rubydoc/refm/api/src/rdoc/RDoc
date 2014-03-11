@@ -1,0 +1,18 @@
+= module RDoc
+
+rdoc 문서를 다루는 모듈입니다.
+
+#@#== Constants
+
+--- DOT_DOC_FILENAME -> ".document"
+
+rdoc 명령어가 처리하는 파일명 일람을 담음 파일의 이름을 리턴합니다.
+
+#@since 1.9.1
+
+--- VERSION -> String
+
+RDoc 버전을 나타내는 문자열을 리턴합니다.
+
+#@include(RDoc__constants)
+#@end

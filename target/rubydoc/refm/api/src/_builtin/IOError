@@ -1,0 +1,3 @@
+= class IOError < StandardError
+
+입출력 에러를 나태내는 예외 클래스입니다.

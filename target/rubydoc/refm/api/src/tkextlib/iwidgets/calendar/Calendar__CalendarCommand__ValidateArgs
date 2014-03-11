@@ -1,0 +1,10 @@
+= class Tk::Iwidgets::Calendar::CalendarCommand::ValidateArgs < TkUtil::CallbackSubst
+
+
+== Class Methods
+
+--- ret_val(val)
+#@todo
+
+
+

@@ -1,0 +1,69 @@
+= class SystemExit < Exception
+
+Ruby 인터프리터가 종료될 때 발생합니다.
+#@# exit와 raise SystemExit의 차이： [[ruby-dev:12785]]
+
+
+== Class Methods
+
+#@since 1.8.0
+--- new(status = 0, error_message = "") -> SystemExit
+
+SystemExit 객체를 만들어 리턴합니다.
+
+@param status 종료 상태값을 정수로 지정합니다.
+
+@param error_message 에러 메시지를 문자열로 지정합니다.
+
+예:
+
+  ex = SystemExit.new(1)
+  p ex.status   # => 1
+#@end
+
+
+== Instance Methods
+
+#@since 1.8.0
+--- status -> Fixnum
+
+예외 객체에 저장된 종료 상태값을 리턴합니다.
+
+종료 상태값은 [[m:Kernel.#exit]]메소드나 [[m:SystemExit.new]] 메소드로 설정할 수 있습니다.
+
+예:
+
+  begin
+    exit 1
+  rescue SystemExit => err
+    p err.status   # => 1
+  end
+
+  begin
+    raise SystemExit.new(1, "dummy exit")
+  rescue SystemExit => err
+    p err.status   # => 1
+  end
+#@end
+
+#@since 1.8.2
+--- success?-> bool
+
+종료 상태값이 정상종료를 나타내는 값이면 true를 리턴합니다.
+
+대부분의 시스템에서는 0이 정상종료를 나타냅니다.
+
+예:
+
+  begin
+    exit true
+  rescue SystemExit => err
+    p err.success?# => true
+  end
+
+  begin
+    exit false
+  rescue SystemExit => err
+    p err.success?# => false
+  end
+#@end

@@ -1,0 +1,5 @@
+= class RDoc::SingleClass < RDoc::ClassModule
+
+特異クラスを表現するクラスです。
+
+라이브러리 내부에서 사용합니다.

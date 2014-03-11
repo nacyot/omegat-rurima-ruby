@@ -1,0 +1,3 @@
+= class NotImplementedError < ScriptError
+
+구혀뇌지 않은 기능이 호출되었을 때 발생합니다.

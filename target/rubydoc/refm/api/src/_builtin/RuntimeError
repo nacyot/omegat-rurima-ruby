@@ -1,0 +1,5 @@
+= class RuntimeError < StandardError
+
+특정한 예외 클래스에 해당하지 않는 에러가 발생하면 발생하는 에러입니다.
+[[m:Kernel.#raise]] 메소드 호출시 예외 클래스가 지정되지 않았을 때에도
+RuntimeError가 발생됩니다.

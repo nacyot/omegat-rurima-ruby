@@ -1,0 +1,28 @@
+#@since 1.8.0
+#@if (version < "1.9.0")
+= class CSV::BasicWriter < CSV::Writer
+CSV 데이터를 작성할 때 사용하는 클래스입니다.
+
+
+== Class Methods
+
+--- new(str_or_writable, fs = ',', rs = nil) -> CSV::BasicWriter
+인수 str_or_writable을 출력 대상으로 하는 [[c:CSV::BasicWriter]] 객체를 생성합니다.
+
+@param str_or_writable CSV 데이터를 출력할 곳.이 인자로 넘겨질 인스턴스에는 << 메소드가 정의되어있어야 합니다.
+@param fs 데이터의 필드 구분자를 지정합니다.
+          기본설정은 nil이며, 이 때 구분자는 ','가 됩니다.
+@param rs 행 구분 문자를 지정합니다.nil 지정시 기본값은 CrLf / Lf.
+          Cr으로 나누고 싶으면 ?\r을 지정합니다.
+
+
+== Instance Methods
+
+--- close_on_terminate -> true
+本メソッドを呼び出すことで終了時に[[c:CSV::BasicWriter]]オブジェクトがIOクローズ処理を行います。
+
+== Private Instance Methods
+
+--- terminate -> nil
+close_on_terminateメソッドが既に呼び出されていれば、出力先(newメソッドのstr_or_writableパラメータ)のIOクローズ処理を行います。#@end
+#@end

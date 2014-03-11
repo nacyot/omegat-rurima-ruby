@@ -1,0 +1,399 @@
+= class Dir < Object
+include Enumerable
+
+디렉토리를 다루기위한 클래스입니다.
+
+
+== Class Methods
+           
+--- [](*pattern)                        -> [String]
+#@if(version >= "1.8.0")
+--- glob(pattern, flags = 0)                -> [String]
+--- glob(pattern, flags = 0) {|file| ...}   -> nil
+#@else
+--- glob(pattern)                       -> [String]
+--- glob(pattern) {|file| ...}          -> nil
+#@end
+
+와일드 카드 문자를 전개하여 패턴에 들어맞는 파일명을 문자열 배열로 리턴합니다.
+패턴에 들어맞는 파일이 없으면 빈 배열을 리턴합니다.
+
+블록이 주어진 경우 와일드 카드에 들어맞는 파일을 각각 인수로 넘겨 블록을 실행하고 nil을 리턴합니다.
+
+@param pattern 패턴 문자열을 지정합니다.
+               패턴을 "\0" 문자로 나누면 한 번에 여러 개의 패턴을 지정할 수도
+               있습니다.
+#@since 1.8.0
+               패턴을 나누는 문자열은 오직 "\0"만 사용할 수 있습니다.
+#@else
+               패턴을 나누는 문자열로 "\0" 이외에 스페이스, 탭, 줄바꿈과 같은 공백 문자열을 사용할 수 있습니다.
+#@end
+#@since 1.9.1
+               패턴을 가진 배열을 지정하는 방식으로 여러 개의 패턴을 지정할 수 있습니다.
+#@end
+
+#@since 1.8.0
+@param flags [[m:File.fnmatch]]에 지정할 수 있는 flag와 같은 flag를 지정할 수 있습니다.
+             flag를 지정해서 패턴을 검색하는 방식을 변경할 수 있습니다.
+//emlist{
+  Dir.glob("*")                      #=> ["bar", "foo"]
+  Dir.glob("*", File::FNM_DOTMATCH)  #=> [".", "..", "bar", "foo"]
+//}
+#@end
+
+와일드 카드 문자로는 아래의 것들을 사용할 수 있습니다.이 문자들은 역슬래시를 사용해
+이스케이프할 수 있습니다.쌍따옴표 문자열에서는 2중으로 이스케이프해야 하니 주의해주세요.
+와일드 카드 문자는 기본적으로 파일명 앞의 "."에 들어맞지 않습니다.
+
+: *
+    빈 문자열을 포함한 임의의 문자열에 일치합니다.
+: ?    임의의 한 문자에 일치합니다.
+: [ ]
+    대괄호 안의 있는 문자들에 일치합니다.-로 연결된
+    문자는 범위를 나타냅니다.대괄호 안의 첫 문자가
+    ^로 시작하면 대괄호 안에 없는 문자들에 일치합니다.
+    ksh나 POSIX shell에서와 같이 ^  대신에 !도같은 뜻으로
+    사용할 수 있습니다.
+: { }
+    쉼표로 구분된 문자열을 조합해서 전개합니다.예를 들어
+    foo{a,b,c} 패턴은 fooa, foob, fooc 
+    로 전개되고 각각에 일치하는 문자열을 찾습니다.
+
+    중괄호는 중첩해서 사용할 수 있습니다.예를 들어
+    {foo,bar{foo,bar}} 패턴은 foo, barfoo, barbar
+    에 들어맞습니다.
+: **/
+    와일드 카드 */는 0회 이상 반복을 의미하며
+    디렉토리를 재귀적으로 탐색합니다.
+    예를 들어
+    foo/**/bar は foo/bar, foo/*/bar,
+    foo/*/*/bar ... (무한히 이어집니다)에 
+    일치합니다.
+
+예:
+
+  # 일반적인 예
+  p Dir.glob("*")          #=> ["foo", "bar", "baz"]
+  p Dir.glob("./b*")       #=> ["./bar", "./baz"]      맨 앞에 "./"가 붙어있습니다.
+  p Dir.glob("*/")         #=> ["foo/"]                디렉토리에만 들어맞습니다.
+  p Dir.glob("wrong_name") #=> []                      들어맞는 파일이 없으면 빈 배열을 리턴합니다.
+
+  Dir.glob("b*") {|f| p f }
+ 
+  #=> "bar"
+      "baz"
+
+  # 여러가지 패턴을 지정하는 예
+  p Dir.glob("f*\0b*")     # => ["foo", "bar"]
+#@since 1.9.1
+  p Dir.glob(["f*", "b*"]) # => ["foo", "bar"]
+  p Dir["f*", "b*"]        # => ["foo", "bar"]
+#@end
+
+  # 와일드 카드 사용예
+  Dir.glob("*")            #=> ["foo", "bar"]
+  Dir.glob("fo?")          #=> ["foo"]
+  Dir.glob("[^f]*")        #=> ["bar"]
+  Dir.glob("{b,f}*")       #=> ["bar", "foo"]
+
+
+--- chdir           -> 0
+--- chdir(path)     -> 0
+#@since 1.8.0
+--- chdir {|path| ... }          -> object
+--- chdir(path) {|path| ... }    -> object
+#@end
+
+작업 디렉토리를 path로 변경합니다.
+
+path가 생략된 경우에는 환경변수 HOME나 LOGDIR이 설정된
+디렉토리로 이동합니다.
+작업 디렉토리 변경에 성공하면 0을 리턴합니다.
+
+#@since 1.8.0
+블록이 넘겨진 경우엔 작업 디렉토리가 블록 안에서만 변경되며,블록을 평가하고 그 결과를 리턴합니다.
+#@end
+
+@param path 디렉토리의 경로를 문자열로 지정합니다.
+
+@raise Errno::EXXX 작업에 실패하면 발생합니다.
+
+예:
+
+   Dir.chdir("/var/spool/mail")
+   p Dir.pwd                    #=> "/var/spool/mail"
+   Dir.chdir("/tmp") do
+     p Dir.pwd                  #=> "/tmp"
+   end 
+   p Dir.pwd                    #=> "/var/spool/mail"
+
+--- chroot(path)    -> 0
+
+루트 디렉토리를 path로 변경합니다.
+
+오직 슈퍼 유저만이 루트 디렉토리를 변경할 수 있습니다.
+루트 디렉토리 변경에 성공하면 0를 리턴합니다.
+사용하는 시스템 매뉴얼의 chroot 항목을 참조해주세요.
+
+@param path 디렉토리의 경로를 문자열로 지정합니다.
+
+@raise Errno::EXXX 작업에 실패하면 발생합니다.
+
+예:
+
+ p Dir.glob("*")   #=> ["file1", "file2]
+ Dir.chroot("./")
+ p Dir.glob("/*")  #=> ["/file1", "/file2]
+
+@see [[url:http://opengroup.org/onlinepubs/007908799/xsh/chroot.html]]
+
+--- delete(path)    -> 0
+--- rmdir(path)     -> 0
+--- unlink(path)    -> 0
+
+디렉토리를 삭제합니다.비어있는 디렉토리만 삭제할 수 있습니다.디렉토리가 삭제되면 0을 리턴합니다.
+
+@param path 디렉토리의 경로를 문자열로 지정합니다.
+
+@raise Errno::EXXX 작업에 실패하면 발생합니다.
+
+예:
+
+  Dir.delete("/tmp/hoge-jbrYBh.tmp")
+
+--- entries(path)    -> [String]
+
+path 디렉토리에 들어있는 파일들의 이름을 배열로 리턴합니다.
+
+@param path 디렉토리의 경로를 문자열로 지정합니다.
+
+@raise Errno::EXXX 작업에 실패하면 발생합니다.
+
+예:
+
+  Dir.entries('.') #=> [".", "..", "bar", "foo"]
+
+--- foreach(path) {|file| ...}    -> nil
+#@since 1.8.7
+#@since 1.9.1
+--- foreach                       -> Enumerator
+#@else
+--- foreach                       -> Enumerable::Enumerator
+#@end
+#@end
+
+path 디렉토리에 들어있는 파일들의 이름을 인수로 블록을 평가합니다.
+
+#@since 1.8.7
+블록을 지정하지 않으면 각각을 문자열로 리턴합니다.
+#@since 1.9.1
+[[c:Enumerator]] 객체를 리턴합니다.
+#@else
+[[c:Enumerable::Enumerator]] 객체를 리턴합니다.
+#@end
+#@end
+
+@param path 디렉토리의 경로를 문자열로 지정합니다.
+
+@raise Errno::EXXX 작업에 실패하면 발생합니다.
+
+예:
+
+  Dir.foreach('.'){|f|
+    p f
+  }
+  #=> 
+  "."
+  ".."
+  "bar"
+  "foo"
+
+--- getwd    -> String
+--- pwd      -> String
+
+작업 디렉토리의 전체 경로명을 문자열로 리턴합니다.
+
+@raise Errno::EXXX 작업 디렉토리를 읽어오지 못 하면 발생합니다. 거의 발생하지 않는다고 봐도 무방합니다.
+
+예:
+
+   Dir.chdir("/tmp")   #=> 0
+   Dir.getwd           #=> "/tmp"
+
+--- mkdir(path, mode = 0777)    -> 0
+
+path에 지정된 새로운 디렉토리를 생성합니다.퍼미션은 
+mode에 지정한 값에 umask을 곱한 값(mode & ~umask)이 됩니다.
+[[man:mkdir(2)]]도 참조해주세요.
+디렉토리 생성에 성공하면 0을 리턴합니다.
+
+@param path 디렉토리의 경로를 문자열로 지정합니다.
+
+@param mode 디렉토리 모드를 정수로 지정합니다.
+
+@raise Errno::EXXX 디렉토리 생성에 실패하면 발생합니다.
+
+예:
+
+  p File.umask                                  #=> 2
+  Dir.mkdir('t', 0666)
+  p "%#o" % (07777 & File.stat('t').mode)  #=> "0664"
+
+@see [[m:FileUtils.#makedirs]]
+
+--- new(path)               -> Dir
+--- open(path)              -> Dir
+#@if (version >= "1.8.0")
+--- open(path) {|dir| ...}  -> object
+#@else
+--- open(path) {|dir| ...}  -> nil
+#@end
+
+path의 디렉토리 스트림을 열어서 리턴합니다.
+
+블록이 넘겨지면 디렉토리 스트림을 인수로 블록을 실행합니다.블록을 실행이 끝나면 
+디렉토리를 자동적으로 닫습니다.
+#@since 1.8.0
+블록의 실행 결과를 리턴합니다.
+#@end
+
+@param path 디렉토리의 경로를 문자열로 지정합니다.
+
+@raise Errno::EXXX 디렉토리를 열지 못 하면 발생합니다.
+
+
+#@since 1.9.1
+--- exist?(file_name)    -> bool
+--- exists?(file_name)    -> bool
+
+file_name 디렉토리가 존재하면 true를 리턴합니다.
+그렇지 않은 경우엔 false를 반환합니다.
+
+@param file_name 확인하고 싶은 디렉토리명.
+
+  Dir.exist?(".")      # => true
+  Dir.exists?(".")     # => true
+  File.directory?(".") # => true
+
+@see [[m:File.directory?]]
+
+#@end
+
+#@since 1.9.2
+--- home          -> String | nil
+--- home(user)    -> String | nil
+
+현재 사용자나 지정된 사용자의 홈 디렉토리를 리턴합니다.
+
+Dir.home 메소드나 Dir.home("root") 메소드는
+File.expand_path("~")나 File.expand_path("~root")와
+거의 같은 결과를 리턴합니다.
+
+@see [[m:File.expand_path]]
+#@end
+
+
+== Instance Methods
+
+--- close    -> nil
+
+디렉토리 스트림을 닫습니다.닫은 이후에 디렉토리 스트림에 접근하면 [[c:IOError]]가 발생합니다. 디렉토리 스트림이 정상적으로 닫히면 nil을 리턴합니다.
+
+@raise IOError 디렉토리 스트림이 정상적으로 닫히지 않으면 발생합니다.이미 닫혀있는 경우에도 같은 에러가 발생합니다.
+
+--- each {|item| ... }    -> self
+#@since 1.9.1
+--- each                  -> Enumerator
+#@else
+#@since 1.8.7
+--- each                  -> Enumerable::Enumerator
+#@end
+#@end
+
+디렉토리의 각 파일들을 나타내는 문자열을 인수로 블록을 평가합니다.
+
+#@since 1.8.7
+블록이 넘겨지지 않으면 각각을 문자열로 리턴합니다.
+#@since 1.9.1
+[[c:Enumerator]]
+#@else
+[[c:Enumerable::Enumerator]]
+#@end
+객체를 리턴합니다.
+#@end
+
+@raise IOError 이미 self가 닫혀있으면 발생합니다.
+
+예:
+
+  Dir.open('.').each{|f|
+    p f
+  }
+  #=> 
+  "."
+  ".."
+  "bar"
+  "foo"
+
+#@since 1.8.0
+--- path    -> String
+
+오픈 되어있는 디렉토리의 경로명을 문자열로 리턴합니다.
+
+@raise IOError 이미 self가 닫혀있으면 발생합니다.
+#@end
+
+--- pos     -> Integer
+--- tell    -> Integer
+
+디렉토리 스트림의 현재 위치를 정수로 리턴합니다.
+
+@raise IOError 이미 self가 닫혀있으면 발생합니다.
+
+예:
+
+  Dir.open("/tmp") {|d|
+    d.each {|f|
+      p d.pos
+    }
+  }
+
+--- pos=(pos)
+--- seek(pos)    -> self
+
+디렉토리 스트림을 읽을 위치를 pos로 이동합니다.
+pos는 [[m:Dir#tell]] 으로 지정한 값이어야만 합니다.
+
+@param pos 이동하고 싶은 위치를 정수로 지정합니다.
+
+@raise IOError 이미 self가 닫혀있으면 발생합니다.
+
+예:
+
+   d = Dir.new("testdir")   #=> #<Dir:0x401b3c40>
+   d.read                   #=> "."
+   i = d.tell               #=> 12
+   d.read                   #=> ".."
+   d.seek(i)                #=> #<Dir:0x401b3c40>
+   d.read                   #=> ".."
+
+--- read    -> String | nil
+
+디렉토리 스트림에서 다음 파일을 읽어와 리턴합니다.마지막 파일까지 이미 읽어왔으면 nil을 리턴합니다.
+
+@raise Errno::EXXX 폴더를 읽어오지 못 하면 발생합니다.
+
+@raise IOError 이미 self가 닫혀있으면 발생합니다.
+
+--- rewind    -> self
+
+디렉토리 스트림을 읽어올 위치를 앞으로 이동시킵니다.
+
+@raise IOError 이미 self가 닫혀있으면 발생합니다.
+
+예:
+
+   d = Dir.new("testdir")
+   d.read     #=> "."
+   d.rewind   #=> #<Dir:0x401b3fb0>
+   d.read     #=> "."

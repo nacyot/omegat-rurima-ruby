@@ -1,0 +1,126 @@
+= module OptionParser::Arguable
+
+[[m:Object::ARGV]]를 확장하기 위한 모듈입니다.
+[[lib:optparse]]를 require하면 ARGV는
+OptionParser::Arguable를 [[m:Object#extend]]합니다.
+
+명령행에서 넘겨받은 인수를 나타내는 문자열 배열을 확장할 때도 사용할 수 있습니다.
+
+
+== Instance Methods
+
+--- options=(opt)
+
+self를 분석하기 위해 [[c:OptionParser]] 객체를 지정합니다.
+
+@param opt self를 분석하는 [[c:OptionParser]]나 nil 혹은 false를 지정합니다.
+           nil이나 false이면 self의 options= 메소드와 options 메소드를
+           미정의 상태로 만듭니다.
+
+--- options                -> OptionParser
+--- options{|opt| ... }    -> object | nil
+
+self를 분석하기 위해 사용하는 [[c:OptionParser]] 객체를 지정합니다.
+처음 호출될 때 자동적으로 생성됩니다.
+[[m:OptionParser#default_argv]]에는 self가 설정되어 있습니다.
+
+블록이 넘겨지면 [[c:OptionParser]]을 인수로 블록을 실행합니다.
+블록을 평가하고 그 결과를 리턴합니다.
+블록 실행 도중에 [[c:OptionParser::ParseError]]가
+발생하면 전부 rescue해서 에러메시지를 출력한 후
+nil을 리턴합니다.
+
+예:
+
+ require 'optparse'
+ 
+ o = nil
+ ARGV.options{|opt|
+   opt.on('-a'){ o = true }
+   opt.parse! }
+ p o                         #=> true
+
+--- order!-> [String]
+--- order!{|s| ... }     -> [String]
+
+self를 파괴적으로 분석하고 분석 되지 않고 남은 인수들를 문자열 배열로 리턴합니다.
+[[m:OptionParser#order!]]을 참조하세요.
+
+@raise OptionParser::ParseError self의 분석에 실패하면 발생합니다.
+                                실제로 발생하는 예외는 OptionParser::ParseError의
+                                서브클래스입니다.
+
+예:
+
+  require 'optparse'
+  
+  o = nil
+  ARGV.options.on('-a'){ o = true }
+  ARGV.order!  p o                                #=> true
+
+--- permute!-> [String]
+
+self를 파괴적으로 분석하고 분석 되지 않고 남은 인수들를 문자열 배열로 리턴합니다.
+[[m:OptionParser#permute!]]를 참조해주세요.
+
+@raise OptionParser::ParseError self의 분석에 실패하면 발생합니다.
+                                실제로 발생하는 예외는 OptionParser::ParseError의
+                                서브클래스입니다.
+
+예:
+
+  require 'optparse'
+  
+  o = nil
+  ARGV.options.on('-a'){ o = true }
+  ARGV.permute!  p o                                #=> true
+
+--- parse!-> [String]
+
+self를 파괴적으로 분석하고 분석 되지 않고 남은 인수들를 문자열 배열로 리턴합니다.
+[[m:OptionParser#parse!]]를 참조해주세요.
+
+@raise OptionParser::ParseError self의 분석에 실패하면 발생합니다.
+                                실제로 발생하는 예외는 OptionParser::ParseError의
+                                서브클래스입니다.
+
+예:
+
+  require 'optparse'
+  
+  o = nil
+  ARGV.options.on('-a'){ o = true }
+  ARGV.parse!  p o                                #=> true
+
+#@since 1.8.5
+--- getopts(short_opt, *long_opt)    -> Hash
+
+지정된 short_opt나 long_opt에 따라 self를 분석하고 그 결과를 Hash 객체로 리턴합니다.
+
+명령행에 - 이나 -- 을 지정하면 그 이후 부분은 분석하지 않습니다.
+
+@param short_opt -f나 -fx 같은 짧은 이름을 가진 옵션을 문자열로 지정합니다.옵션이 -f 와 -x
+                 두 개이면 "fx" 처럼 지정합니다.옵션이 없는 경우엔 빈 문자열을 지정합니다.
+                 옵션이 인수를 받는 경우엔 ":"로 구분합니다.
+
+@param long_opt --version 이나 --bufsize=512와 같이 긴 이름을 가진 옵션을 지정합니다.
+                옵션이 인수를 받는 경우엔 ":"로 구분합니다.
+                옵션이 인수가 있는 경우 기본 설정값을 ":" 바로 뒤에 지정할 수 있습니다.
+                예를 들어 "bufsize:1024"처럼 사용할 수 있습니다.
+
+@raise OptionParser::ParseError self의 분석에 실패하면 발생합니다.
+                                실제로 발생하는 예외는 OptionParser::ParseError의
+                                서브클래스입니다.
+
+예:
+
+ # t.rb의 내용
+ require 'optparse'
+ params = ARGV.getopts("ab:", "foo", "bar:", "bufsize:1024")
+ p params
+
+ # 실행결과
+ $ ruby t.rb -b 1 --foo  --bar xxx -- -a
+ {"bufsize"=>"1024", "a"=>false, "b"=>"1", "foo"=>true, "bar"=>"xxx"}  # "a"=>false 이므로 주의
+
+#@end

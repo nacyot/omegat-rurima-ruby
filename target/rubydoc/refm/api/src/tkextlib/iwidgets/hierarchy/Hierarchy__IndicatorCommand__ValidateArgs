@@ -1,0 +1,10 @@
+= class Tk::Iwidgets::Hierarchy::IndicatorCommand::ValidateArgs < TkUtil::CallbackSubst
+
+
+== Class Methods
+
+--- ret_val(val)
+#@todo
+
+
+

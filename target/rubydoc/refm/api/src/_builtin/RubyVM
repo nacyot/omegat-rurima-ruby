@@ -1,0 +1,55 @@
+= class RubyVM
+
+Ruby의 VM을 나타내는 클래스입니다.
+
+== Singleton Methods
+
+#@# :nodoc:
+#@# --- SDR
+#@#
+#@# VMDEBUG を有効にしてコンパイルした時のみ有効
+#@#
+#@# :nodoc:
+#@# --- NSDR
+#@#
+#@# VMDEBUG を有効にしてコンパイルした時のみ有効
+#@#
+#@# :nodoc:
+#@# --- USAGE_ANALYSIS_INSN_STOP
+#@#
+#@# VM_COLLECT_USAGE_DETAILS を有効にしてコンパイルした時のみ有効
+#@#
+#@# :nodoc:
+#@# --- USAGE_ANALYSIS_OPERAND_STOP
+#@#
+#@# VM_COLLECT_USAGE_DETAILS を有効にしてコンパイルした時のみ有効
+#@#
+#@# :nodoc:
+#@# --- USAGE_ANALYSIS_REGISTER_STOP
+#@#
+#@# VM_COLLECT_USAGE_DETAILS を有効にしてコンパイルした時のみ有効
+
+#@#== Constants
+
+--- OPTS -> [String]
+
+[[c:RubyVM]]의 빌드 옵션 전체를 리턴합니다.
+
+--- INSTRUCTION_NAMES -> [String]
+
+[[c:RubyVM]] の命令シーケンスの名前の一覧を返します。
+
+@see [[c:RubyVM::InstructionSequence]]
+
+#@# :nodoc: 에 관한 상수이므로 주석 처리#@# --- USAGE_ANALYSIS_INSN
+#@# --- USAGE_ANALYSIS_REGS
+#@# --- USAGE_ANALYSIS_INSN_BIGRAM
+
+#@since 2.0.0
+--- DEFAULT_PARAMS -> {Symbol => Integer}
+
+[[c:RubyVM]] のデフォルトのパラメータを返します。
+
+[주의] 이 값은 C Ruby 고유의 값입니ㅏ.이 값을 바꿔도 [[c:RubyVM]]에는
+아무런 영향도 끼치지 않습니다.또한 설계가 달라질 수도 있기 때문이 이 값에 의존해선 안됩니다.
+#@end

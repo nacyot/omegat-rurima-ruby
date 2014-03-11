@@ -1,0 +1,8 @@
+= class TclTkCommand < TclTkObject
+
+
+== Instance Methods
+
+--- e(*args)
+#@todo
+

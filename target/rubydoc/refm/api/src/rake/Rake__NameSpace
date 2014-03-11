@@ -1,0 +1,25 @@
+= class Rake::NameSpace
+
+タスクの名前空間を表すクラスです。
+
+== Public Instance Methods
+
+--- [](name) -> Rake::Task
+
+与えられた名前のタスクを返します。
+
+@param name 태스크 이름을 지정합니다.
+
+--- tasks -> Array
+
+タスクのリストを返します。
+
+== Singleton Methods
+
+--- new(task_manager, scope_list)
+
+객체를 초기화합니다.
+
+@param task_manager [[c:Rake::Application]] のインスタンスを指定します。
+
+@param scope_list 名前空間のリストを指定します。

@@ -1,0 +1,93 @@
+--- singleton_method_added(name) -> object
+
+싱글톤 메소드가 추가될 때 인터프리터가 호출합니다.
+
+일반적으로 메소드를 추가할 때 후크 메소드로
+[[m:Module#method_added]]를 사용합니다.
+
+@param name 추가된 메소드 이름([[c:Symbol]])
+
+    class Foo
+      def singleton_method_added(name)
+        puts "singleton method \"#{name}\" was added"
+      end
+    end
+
+    obj = Foo.new
+    def obj.foo
+    end
+
+    #=> singleton method "foo" was added
+
+#@since 1.9.1
+@see [[m:Module#method_added]],[[m:BasicObject#singleton_method_removed]],[[m:BasicObject#singleton_method_undefined]]
+#@else
+@see [[m:Module#method_added]],[[m:Object#singleton_method_removed]],[[m:Object#singleton_method_undefined]]
+#@end
+
+--- singleton_method_removed(name) -> object
+
+싱글톤 메소드가 [[m:Module#remove_method]] 메소드에 의해
+삭제될 때 인터프리터가 호출합니다. 
+
+일반적으로 메소드를 삭제할 때 후크 메소드로
+[[m:Module#method_removed]]를 사용합니다.
+
+@param name 삭제된 메소드 이름([[c:Symbol]])
+
+    class Foo
+      def singleton_method_removed(name)
+        puts "singleton method \"#{name}\" was removed"
+      end
+    end
+
+    obj = Foo.new
+    def obj.foo
+    end
+
+    class << obj
+      remove_method :foo
+    end
+
+    #=> singleton method "foo" was removed
+
+#@since 1.9.1
+@see [[m:Module#method_removed]],[[m:BasicObject#singleton_method_added]],[[m:BasicObject#singleton_method_undefined]]
+#@else
+@see [[m:Module#method_removed]],[[m:Object#singleton_method_added]],[[m:Object#singleton_method_undefined]]
+#@end
+
+--- singleton_method_undefined(name) -> object
+
+싱글톤 메소드가 [[m:Module#undef_method]]나 undef 키워드에 의해
+정의되지 않은 상태가 됐을 때 인터프리터가 호출합니다.
+
+일반적으로 메소드를 정의하지 않은 상태로 만들 때 후크 메소드로 
+
+[[m:Module#method_undefined]]를 사용합니다.
+
+    class Foo
+      def singleton_method_undefined(name)
+        puts "singleton method \"#{name}\" was undefined"
+      end
+    end
+
+    obj = Foo.new
+    def obj.foo
+    end
+    def obj.bar
+    end
+
+    class << obj
+      undef_method :foo
+    end
+    obj.instance_eval {undef bar}
+
+    #=> singleton method "foo" was undefined
+    #   singleton method "bar" was undefined
+
+#@since 1.9.1
+@see [[m:Module#method_undefined]],[[m:BasicObject#singleton_method_added]],[[m:BasicObject#singleton_method_removed]] , [[ref:d:spec/def#undef]]
+#@else
+@see [[m:Module#method_undefined]],[[m:Object#singleton_method_added]],[[m:Object#singleton_method_removed]] , [[ref:d:spec/def#undef]]
+#@end

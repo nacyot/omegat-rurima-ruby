@@ -1,0 +1,64 @@
+#@since 1.8.0
+
+= class CSV::Writer < Object
+CSVの書き込み時のベースとなるクラス
+
+
+== Class Methods
+
+--- generate(str_or_writable, fs = ',', rs = nil) -> CSV::BasicWriter
+--- generate(str_or_writable, fs = ',', rs = nil) { |row| ... } -> nil
+str_or_writable を書き込み先とする [[c:CSV::BasicWriter]] クラスのインスタンスを生成し、書き込み先(str_or_writable)をブロックに渡します。
+
+@param str_or_writable CSV 데이터를 출력할 곳.이 인자로 넘겨질 인스턴스에는 << 메소드가 정의되어있어야 합니다.
+@param fs 데이터의 필드 구분자를 지정합니다.
+          기본설정은 nil이며, 이 때 구분자는 ','가 됩니다.
+@param rs 행 구분 문자를 지정합니다.nil 지정시 기본값은 CrLf / Lf.
+          Cr으로 나누고 싶으면 ?\r을 지정합니다.
+
+예:
+  s = "1,2,3,4\n"
+  CSV::Writer.generate(s){|data|
+    data << ['a', 'b', 'c']
+  }
+  p s #=> "1,2,3,4\na,b,c\n"
+
+--- create(str_or_writable, fs = ',', rs = nil) -> CSV::BasicWriter
+str_or_writable を書き込み先とする [[c:CSV::BasicWriter]] クラスのインスタンスを生成します。
+
+@param str_or_writable CSV 데이터를 출력할 곳.이 인자로 넘겨질 인스턴스에는 << 메소드가 정의되어있어야 합니다.
+@param fs 데이터의 필드 구분자를 지정합니다.
+          기본설정은 nil이며, 이 때 구분자는 ','가 됩니다.
+@param rs 행 구분 문자를 지정합니다.nil 지정시 기본값은 CrLf / Lf.
+          Cr으로 나누고 싶으면 ?\r을 지정합니다.
+
+
+== Instance Methods
+
+--- <<(row) -> CSV::BasicWriter
+--- add_row(row) -> CSV::BasicWriter
+引数で渡されたデータを1行分としてCSVデータに追加します。
+
+@param row 1行文として書き込み先に追加するデータ。           [[c:String]] あるいは [[c:Array]] オブジェクトである必要があります。
+
+===== 주의
+
+データ追加時に""(空文字)と値なし(nil)を区別します。
+例えば、["a", "", nil, "b"] の配列を渡した場合に a, "", , b という行が追加されます。
+
+예:
+  csv_w = CSV::Writer.generate("")
+  row = [1, 2, 3]
+  csv_w.add_row(row)         #=> "1,2,3\n"
+  row = ["a", "", nil, "b"]
+  csv_w.add_row(row)         #=> "1,2,3\na,\"\",,b\n"
+
+--- close -> nil
+privateのterminateメソッドを呼び出します。
+
+== Private Instance Methods
+
+--- terminate -> nil
+インスタンス破棄時処理が必要な場合に再定義してください。
+
+#@end

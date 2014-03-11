@@ -1,0 +1,131 @@
+= class Class < Module
+
+클래스의 클래스입니다.
+
+정확히는 개별 클래스들의 메타클래스 격인 이름 없는 클래스를 클래스로서 가지고 있으며,
+Class는 그 메타클래스의 클래스입니다.이러한 구조가 복잡해보이긴 합니다만 Ruby를 프로그래밍하는 데 있어
+중요한 내용은 아닙니다.
+
+클래스와 모듈의 차이점은 다음과 같은 것이 있습니다.
+
+  * 클래스는 인스턴스를 만들 수 있지만 모듈에서는 불가능합니다.
+  * 모듈은 다른 모듈이나 클래스에 include할 수 있지만 클래스는 불가능합니다.
+
+이러한 차이점 이외에 대부분의 기능은 [[c:Module]]을 상속합니다.Module의 메소드 중에
+
+  * [[m:Module#module_function]]
+  * [[m:Module#extend_object]]
+  * [[m:Module#append_features]]
+
+는 Class에서 사용할 수 없습니다.
+
+
+== Class Methods
+
+--- new(superclass = Object)                -> Class
+#@since 1.8.0
+--- new(superclass = Object) {|klass| ... } -> Class
+#@end
+
+이름 없는 superclass의 서브클래스를 생성합니다.
+
+名前のないクラスは、最初に名前を求める際に代入されている定数名を検
+索し、見つかった定数名をクラス名とします。
+
+  p foo = Class.new   # => #<Class:0x401b90f8>
+  p foo.name          # => ""
+  Foo = foo           # 여기서 p foo를 평가하면 "Foo"로 고정
+  Bar = foo
+  p foo.name          # => "Bar"  ("Foo"인지 "Bar"인지 정해지지 않음)
+
+#@since 1.8.0
+ブロックが与えられた場合、生成したクラスを引数として
+クラスのコンテキストでブロックを実行します。아래와 같이 사용합니다.
+
+  klass = Class.new(superclass)
+  klass.module_eval {|m| ... }
+  klass
+
+この場合も生成したクラスを返します。블록은 Class#initialize를 통해 실행됩니다.
+#@end
+
+@param superclass 생성하려는 클래스의 부모 클래스를 지정합니다.
+
+#@since 1.8.0
+예:
+
+ k = Class.new{|c|
+       def initialize
+         p "in initialize"
+       end
+  
+       def hoge
+         p "hoge hoge hoge"
+       end
+     }
+ o = k.new              #=> "in initialize"
+ o.hoge                 #=> "hoge hoge hoge"
+#@end
+
+
+== Instance Methods
+
+#@since 1.8.0
+--- allocate    -> object
+
+self의 인스터스를 생성하고 리턴합니다.生成したオブジェクトは
+自身のインスタンスであること以外には何も特性を持ちません。#@end
+
+--- new(*args, &block)    -> object
+
+self의 인스터스를 생성하고 리턴합니다.
+이 메소드의 인수는 블록을 넘겨 받아 [[m:Object#initialize]]에 넘겨줍니다.
+
+#@since 1.8.0
+new는 [[m:Class#allocate]] 메소드로 인스턴스를 생성하고
+[[m:Object#initialize]] 메소드로 초기화합니다.
+#@end
+
+@param args [[m:Object#initialize]]에 넘겨지는 인수를 지정합니다.
+
+@param block [[m:Object#initialize]]에 넘겨지는 블록을 지정합니다.
+
+--- superclass    -> Class | nil
+
+self의 부모 클래스를 리턴합니다.
+
+#@since 1.9.1
+단 [[c:BasicObject]].superclass 메소드는 nil을 리턴합니다.
+#@else
+단 [[c:Object]].superclass 메소드는 nil을 리턴합니다.
+#@end
+
+--- _load(str)    -> Class
+
+[[m:Object#_dump]]를 참조해주세요.
+
+@param str Ruby のオブジェクトがダンプされた文字列を指定します。
+
+== Private Instance Methods
+
+--- inherited(subclass)     -> ()
+
+クラスのサブクラスが定義された時、新しく生成されたサブクラスを引数
+にインタプリタから呼び出されます。このメソッドが呼ばれるタイミングは
+クラス定義文の実行直前です。
+
+@param subclass プログラム内で新たに定義された自身のサブクラスです。
+
+예:
+
+  class Foo
+    def Foo.inherited(subclass)
+      puts "class \"#{self}\" was inherited by \"#{subclass}\""
+    end
+  end
+  class Bar < Foo
+    puts "executing class body"
+  end
+  
+  # => class "Foo" was inherited by "Bar"
+       executing class body

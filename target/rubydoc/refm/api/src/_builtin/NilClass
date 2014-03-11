@@ -1,0 +1,89 @@
+= class NilClass < Object
+
+nil의 클래스nil은 NilClass 클래스의 유일한 인스턴스입니다.
+nil은 false 객체와 함께 거짓을 나타내며
+이 두 객체 이외의 모든 객체는 참입니다.
+
+
+== Instance Methods
+
+--- &(other) -> false
+
+항상 false를 리턴합니다.
+
+@param other 논리곱을 수행하려는 대상을 지정합니다.
+
+--- |(other) -> bool
+
+other가 참이면 true를 리턴하고 거짓이면 false를 리턴합니다.
+
+@param other 논리합을 구하려는 대상을 지정합니다.
+
+--- ^(other) -> bool
+
+other가 참이면 true를 리턴하고 거짓이면 false를 리턴합니다.
+
+@param other 排他的論理和を行なう式です
+
+--- nil?-> bool
+
+무조건 true를 리턴합니다.
+
+--- to_a -> Array
+
+빈 배열 []을 리턴합니다.
+
+--- to_f -> Float
+
+0.0을 리턴합니다.
+
+--- to_i -> Fixnum
+
+0을 리턴합니다.
+
+--- to_s -> String
+
+빈 문자열 ""을 리턴합니다.
+
+#@since 1.9.1
+--- to_c -> Complex
+
+0+0i를 리턴합니다.
+
+예:
+
+  nil.to_c # => (0+0i)
+
+--- to_r -> Rational
+
+0/1을 리턴합니다.
+
+예:
+
+  nil.to_r # => (0/1)
+
+#@end
+
+#@since 1.9.2
+--- rationalize      -> Rational
+--- rationalize(eps) -> Rational
+
+0/1을 리턴합니다.
+
+@param eps 허용 오차.
+
+인수 eps는 무시됩니다.
+
+예:
+
+  nil.rationalize      # => (0/1)
+  nil.rationalize(100) # => (0/1)
+  nil.rationalize(0.1) # => (0/1)
+
+#@end
+
+#@since 2.0.0
+--- to_h -> {}
+
+{}을 리턴합니다.
+#@end

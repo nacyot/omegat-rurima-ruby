@@ -1,0 +1,727 @@
+= class OptionParser < Object
+
+명령행의 옵션을 처리하기 위한 클래스입니다.
+
+옵션이 지정되었을 때 호출되는 블록을 
+[[m:OptionParser#on]] 메소드로 등록합니다.
+일반적으로 OptionParser는 다음과 같은 순서로 사용합니다.
+
+  (1) OptionParser 객체 opt를 생성합니다.
+  (2) 옵션을 처리하는 블록을 opt에 등록합니다.
+  (3) opt.parse(ARGV)으로 명령행으로 넘겨진 옵션을 분석합니다.
+
+ 
+
+  require "optparse"
+  ProgramConfig = Hash.new
+  opts = OptionParser.new
+  opts.on("-a"){|v| ProgramConfig[:a] = true } # 옵션「-a」가 명령행으로 넘겨졌을 때  opts.parse!(ARGV)                            # 명령행에 넘겨진 옵션을 분석
+
+=== 기본적으로 사용할 수 있는 옵션
+
+아래에 열거된 옵션들은 기본적으로 사용할 수 옵션들입니다.도움말에는 출력되지 않습니다. @@@
+
+: --help
+ 도움말을 출력한 후 종료합니다.
+
+: --version
+
+ [[m:OptionParser#ver]]을 출력한 후 종료합니다.
+ [[m:OptionParser#ver]]가 정의되어있지 않으면 에러 메시지를 출력하고 실행을 중지합니다.
+ 「--version」 옵션에 「,」으로 구분된 클래스명이나 모듈명을 인수로 넘겨주면 해당하는 클래스나 모듈에 정의된 상수「Version」이나 「Release」를 출력하고 종료합니다. //emlist{
+ $ ruby t.rb --version=OptionParser,URI,OpenSSL
+ t: OptionParser version 12203 (2007-04-20)
+ t: URI version 0.9.11
+ t: OpenSSL version 1.0.0
+//}
+== Class Methods
+
+--- new(banner = nil, width = 32, indent = ' ' * 4)              -> OptionParser
+--- new(banner = nil, width = 32, indent = ' ' * 4) {|opt| ...}  -> OptionParser
+
+OptionParser 객체를 생성하고 리턴합니다.
+
+블록이 주어지면 생성된 OptionParser 객체를 인수로 블록을 평가합니다.따라서 아래와 같이 사용할 수 있습니다.
+
+  require 'optparse'
+  OptionParser.new do |opt|
+
+    opt.on('-a') {|v| p v }
+    opt.on('-b') {|v| p v }
+
+    opt.parse!(ARGV)
+  end
+
+@param banner 도움말 시작 부분에 출력되는 프로그램을 설명하는 문단을 문자열로 지정합니다.
+
+@param width 도움말의 폭을 정수로 지정합니다.
+
+@param indent 도움말의 들여쓰기를 문자열로 지정합니다.
+
+--- accept(klass, pat = /.*/){|str| ...}    -> ()
+
+옵션의 인수를 문자열에서 Ruby 객체로 변환해주는
+블록을 등록합니다.모든 OptionParser 인스턴스에서 사용됩니다.
+
+문자열로 주어진 옵션의 인수에서 klass 인스턴스를 만들어 리턴하는 블록을 지정합니다.
+
+[[m:OptionParser#on]]에서 klass를 지정하면
+명령행에 입력된 옵션의 인수는 accept로 등록한 블록으로
+klass 인스턴스로 변환된 후 OptionParser#on 메소드로 등록한 블록으로 넘겨집니다.
+
+  require "optparse"
+  require "time"
+  
+  OptionParser.accept(Time) do |s,|
+    begin
+      Time.parse(s) if s
+    rescue
+      raise OptionParser::InvalidArgument, s
+    end
+  end
+
+  opts = OptionParser.new
+
+  opts.on("-t", "--time [TIME]", Time) do |time|
+    p time.class #=> Time
+  end
+
+  opts.parse!(ARGV)
+
+몇 가지 클래스에 대해선 변환용 블록이 기본적으로 등록되어있습니다.[[m:OptionParser#on]]을 참조해주세요.
+
+@param klass  클래스를 지정합니다.
+
+@param pat [[c:Regexp]]와 같이 match 메소드를 가진 객체를 지정합니다.
+
+--- reject(klass)    -> ()
+
+[[m:OptionParser.accept]] 메소드로 등록한 블록을 제거합니다.
+
+@param klass 제거하고싶은 클래스를 지정합니다.
+
+#@since 1.8.5
+--- getopts(argv, *opts)   -> Hash
+--- getopts(*opts)         -> Hash
+
+인수를 분석한 결과를 Hash로 리턴합니다.(self.new.getopts 와 같습니다.)
+
+@param argv 분석하려는 배열을 지정합니다.
+
+#@since 1.9.1
+@param opts 인수를 문자열로 지정합니다.
+#@else
+@param opts 引数を文字列で指定します。[[m:Kernel#getopts]]를 참조해주세요.
+#@end
+
+@raise OptionParser::ParseError 분석이 실패하면 발생합니다.
+                                실제로 발생하는 예외는 OptionParser::ParseError의
+                                서브 클래스입니다.
+
+@see [[m:OptionParser#getopts]]
+
+#@end
+
+
+== Instance Methods
+
+--- accept(klass, pat = /.*/){|str| ...}    -> ()
+
+[[m:OptionParser.accept]]와 같지만
+등록한 블록은 리시버에만 적용됩니다.
+
+@param klass  클래스를 지정합니다.
+
+@param pat [[c:Regexp]]와 같이 match 메소드를 가진 객체를 지정합니다.
+
+--- reject(klass)    -> ()
+
+[[m:OptionParser#accept]]로 등록한 클래스와 블록을
+self에서 제거합니다.
+
+@param klass self에서 제거하려는 클래스를 지정합니다.
+
+--- banner            -> String
+
+도움말 첫 부분에 출력되는 문자열을 리턴합니다.
+
+@return 도움말 첫 부분에 출력되는 문자열을 리턴합니다.
+
+--- banner=(heading)
+
+도움말 첫 부분에 출력될 문자열을 지정합니다.
+
+@param heading 도움말 첫 부분에 출력될 문자열을 지정합니다.
+
+--- summary_width         -> Integer
+
+도움말의 폭을 리턴합니다.
+
+@return 도움말의 폭을 리턴합니다.
+
+--- summary_width=(width)
+
+도움말의 폭을 정수로 지정합니다.
+
+@param width 도움말의 폭을 정수로 지정합니다.
+
+--- summary_indent          -> String
+
+도움말을 출력할 때 사용할 들여쓰기를 리턴합니다.
+
+@return 도움말을 출력할 때 사용할 들여쓰기를 리턴합니다.
+
+--- summary_indent=(indent)
+
+도움말을 출력할 때 사용할 들여쓰기를 문자열로 지정합니다.
+
+@param indent 도움말을 출력할 때 사용할 들여쓰기를 문자열로 지정합니다.
+
+--- program_name           -> String
+
+프로그램 이름을 문자열로 리턴합니다.
+
+기본적으로 $0을 사용합니다.
+
+@return 프로그램의 이름을 리턴합니다.
+
+--- program_name=(name)
+
+프로그램의 이름을 문자열로 지정합니다.
+
+@param name 프로그램의 이름을 문자열로 지정합니다.
+
+--- version       -> String
+
+프로그램의 버전을 문자열로 리턴합니다.
+
+@return 프로그램의 버전을 문자열로 리턴합니다.
+
+--- version=(ver)
+
+프로그램의 버전을 문자열로 지정합니다.
+
+@param name 프로그램의 버전을 문자열로 지정합니다.
+
+--- release       -> String
+
+프로그램의 릴리즈 정보를 리턴합니다.
+
+--- release=(rel)
+
+프로그램의 릴리즈 정보를 문자열로 지정합니다.
+
+@param name 프로그램의 릴리즈 정보를 문자열로 지정합니다.
+
+--- ver    -> String
+
+program_name、version, release를 가지고 만든 버전 정보를 문자열로 리턴합니다.
+
+--- summarize(to = [], width = self.summary_width, max = width - 1, indent= self.summary_indent)               -> ()
+--- summarize(to = [], width = self.summary_width, max = width - 1, indent= self.summary_indent) {|line| ... } -> ()
+
+サマリを指定された to へと加えていきます。
+
+ブロックが与えられた場合、サマリの各行を引数としてブロックを評価します。
+この場合、ブロックの中で明示的に to へと加えていかない限り、
+to にサマリが加えられることはありません。
+
+@param to サマリを出力するオブジェクトを指定します。to には << メソッドが定義されいる必要があります。
+
+@param width サマリの幅を整数で指定します。
+
+@param max サマリの最大幅を整数で指定します。
+
+@param indent サマリのインデントを文字列で指定します。
+
+--- help    -> String
+--- to_s    -> String
+
+도움말을 리턴합니다.
+
+--- to_a    -> [String]
+
+도움말의 각 행을 요소로 가진 배열을 리턴합니다.
+
+--- separator(sep)    -> ()
+
+도움말의 옵션과 옵션 사이에 sep 문자열을 집어넣습니다.
+여러가지 옵션이 있을 때 도움말을 보기 좋게 만들어 줍니다.
+
+도움말은 on 메소드를 사용한 순서대로 옵션이 출력되므로 구분자를 사용하고 싶은 
+곳에서 메소드를 호출합니다.
+
+@param sep 도움말의 구분자 문자열을 지정합니다.
+
+예:
+       require 'optparse'
+       opts = OptionParser.new
+       opts.banner = "Usage: example.rb [options]"
+       
+       opts.separator ""
+       opts.separator "Specific options:"
+       
+       opts.on("-r", "--require LIBRARY") do |lib|
+               options.library << lib
+       end
+
+       opts.separator ""
+       opts.separator "Common options:"
+       
+       opts.on_tail("-h", "--help", "Show this message") do
+         puts opts
+         exit
+       end
+
+--- on(short, desc = "") {|v| ... }        -> self
+--- on(long, desc = "") {|v| ... }         -> self
+--- on(short, long, desc = "") {|v| ... }  -> self
+
+self에 옵션을 처리하는 블록을 등록합니다.
+명령행에 해당하는 옵션이 지정되면 블록이 실행됩니다.
+
+옵션의 짧은 이름과 긴 이름을 동시에 등록할 수 있습니다.
+  opts.on("-r", "--require LIBRARY"){|lib| ...}
+이 예는 아래의 예제와 같습니다.
+  opts.on("-r LIBRARY"){|lib| ...}
+  opts.on("--require LIBRARY"){|lib| ...}
+
+서로 다른 옵션을 같은 블록에서 처리하도록 등록할 수도 있습니다.
+
+  opt.on('-v', '-vv'){|boolean| ...}
+  opt.on('--require X', '--need', '--dependon'){|x| ... }
+
+@param short 옵션의 짧은 이름을 나타내는 문자열을 지정합니다.
+             そのオプションが引数をとらない場合は、
+//emlist{
+  on("-x"){|boolean| ...}
+//}
+             となります。コマンドラインにオプションが存在した場合 true を引数と
+             してブロックを評価します。             ショートオプションが引数をとる場合は、
+//emlist{
+  on("-x MANDATORY"){|val| ...}
+//}
+             となります。"MANDATORY" の部分は任意の文字列で構いません。             オプションの引数が必須でない場合は [ ] をつけて、
+//emlist{
+  on("-x [OPTIONAL]"){|val| ...}
+//}
+             となります。
+
+@param long 옵션의 긴 이름을 나타내는 문자열을 지정합니다.ショートオプションの時と同様に、
+//emlist{
+  on("--long"){|boolean| ...}
+  on("--long MANDATORY"){|val| ...}
+  on("--long [OPTIONAL]"){|val| ...}
+//}
+            と指定できます。
+
+@param desc 옵션을 설명하기 위한 문자열을 지정합니다.도움말에 출력됩니다.
+
+--- on(short, pat = /.*/, desc = "") {|v| ...}        -> self
+--- on(long, pat = /.*/, desc = "") {|v| ...}         -> self
+--- on(short, long, pat = /.*/, desc = "") {|v| ...}  -> self
+
+self에 옵션을 처리하는 블록을 등록합니다.
+명령행에 해당하는 옵션이 지정되면 블록이 실행됩니다.
+
+옵션의 인수에 사용할 수 있는 정규표현 패턴을 pat에 지정합니다.
+명령어에 옵션의 인수가 패턴에 들어맞지 않으면 
+분석 중에 OptionParser::InvalidArgument가 발생합니다.
+
+  opts.on("--username VALUE", /[a-zA-Z0-9_]+/){|name| ...}
+  # ruby command --username=ruby_user
+  # ruby command --username=ruby.user #=> Error
+
+@param short 옵션의 짧은 이름을 나타내는 문자열을 지정합니다.
+
+@param long 옵션의 긴 이름을 나타내는 문자열을 지정합니다.
+
+@param pat 옵션의 인수에 사용할 수 있는 정규표현 패턴을 pat에 지정합니다.
+
+@param desc 옵션을 설명하기 위한 문자열을 지정합니다.도움말에 출력됩니다.
+
+--- on(short, klass = String, desc = "") {|v| ...}        -> self
+--- on(long, klass = String, desc = "") {|v| ...}         -> self
+--- on(short, long, klass = String, desc = "") {|v| ...}  -> self
+
+self에 옵션을 처리하는 블록을 등록합니다.
+명령행에 해당하는 옵션이 지정되면 블록이 실행됩니다.
+
+klass에는 클래스를 지정합니다.どのようなクラスを受け付けるかは、
+以下の「デフォルトで利用可能な引数クラス」を参照して下さい。OptionParser.accept や OptionParser#accept によって、受け付け
+るクラスを増やすことができます。登録されていないクラスが指定された
+場合、例外 [[c:ArgumentError]] を投げます。また、登録されたクラスであっても引数が変換できないものである場合、例外
+[[c:OptionParser::InvalidArgument]] を投げます。
+
+オプションの引数は accept で登録したブロックで klass のインスタンス
+に変換されてから、ブロックに渡されます。
+
+  opts.on("-w", "--width N", Integer){|w|
+    p w.class #=> Integer
+  }
+  # ruby command --width=32
+
+  opts.on("-o", "--overwrite VALUE", TrueClass){|boolean| ...}
+  # ruby command --overwrite yes
+
+@param short 옵션의 짧은 이름을 나타내는 문자열을 지정합니다.
+
+@param long 옵션의 긴 이름을 나타내는 문자열을 지정합니다.
+
+@param klass 옵션에 넘겨진 인수의 클래스를 지정합니다.
+
+@param desc 옵션을 설명하기 위한 문자열을 지정합니다.도움말에 출력됩니다.
+
+@raise ArgumentError 등록되어있지 않은 클래스가 klass에 지정되면 발생합니다.
+
+==== 기본적으로 사용할 수 있는 인수의 클래스
+
+: Object
+ オプションの引数は変換されません。
+
+: String
+ オプションの引数は変換されません。ただし、空文字列を指定すると
+ [[c:OptionParser::InvalidArgument]] が発生します。
+
+: Integer
+ Integer オブジェクトに変換されます。"0b1"、"07"、"99"、"0xff" といった
+ 2進数、8進数、10進数、16進数の整数のフォーマットを指定できます。
+
+: Float
+ Float オブジェクトに変換されます。"1.0" や "0.5e0" のようなフォーマッ
+ トを指定できます。
+
+: Numeric
+ 整数の場合は Integer オブジェクトに、実数の場合は Float オブジェクトに
+ 変換されます。
+
+: OptionParser::DecimalInteger
+ Integer オブジェクトに変換されます。10進数の整数の整数のフォーマットの
+ みを指定できます。
+
+: OptionParser::OctalInteger
+ Integer オブジェクトに変換されます。"0b1"、"07"、"0xff" といった 2進数、
+ 8進数、16進数の整数のフォーマットを指定できます。
+
+: OptionParser::DecimalNumeric
+ 整数の場合は Integer オブジェクトに、実数の場合は Float オブジェクトに
+ 変換されます。10進数のフォーマットを指定できます。
+
+: TrueClass
+ true か false に変換されます。"yes" や "no"、"true" や "false"、"+"
+ や "-" を指定できます。オプションの引数を省略した場合は true になります。 また、"no-" をオプションの先頭に付けた場合は値が反転します。
+
+: FalseClass
+ true か false に変換されます。TrueClass との違いはオプションの引数を省
+ 略した場合に false になります。
+
+: Array
+ 文字列の配列に変換されます。"," ごとに 1つの要素になります。
+
+--- on(short, *rest) {|v| ...}        -> self
+--- on(long, *rest) {|v| ...}         -> self
+--- on(short, long, *rest) {|v| ...}  -> self
+
+self에 옵션을 처리하는 블록을 등록합니다.
+명령행에 해당하는 옵션이 지정되면 블록이 실행됩니다.
+
+コマンドに与えられた引数が配列やハッシュに含まれない場合、例外
+[[c:OptionParser::InvalidArgument]] が [[m:OptionParser#parse]] 実行時
+に発生します。
+
+@param short 옵션의 짧은 이름을 나타내는 문자열을 지정합니다.
+
+@param long 옵션의 긴 이름을 나타내는 문자열을 지정합니다.
+
+@param rest 可能な引数を列挙した配列やハッシュを与えます。文字列を与えた場合は、
+            サマリに表示されるオプションの説明と見なします。
+
+예:
+  opts.on("--protocol VALUE", [:http, :ftp, :https]){|w|
+    p w
+  }
+  # ruby command --protocol=http #=> :http
+
+  opts.on("-c", "--charset VALUE", {"jis" => "iso-2022-jp", "sjis" => "shift_jis"}){|w|
+    p w
+  }
+  # ruby command --charset=jis #=> "iso-2022-jp"
+
+--- on_head(*arg, &block) -> self
+
+オプションを取り扱うためのブロックを自身の持つリストの最初に登録します。
+
+@param arg [[m:OptionParser#on]] と同様です。
+
+@param block [[m:OptionParser#on]] と同様です。
+
+@see [[m:OptionParser#on]], [[m:OptionParser#on_tail]]
+
+--- on_tail(*arg, &block) -> self
+
+オプションを取り扱うためのブロックを自身の持つリストの最後に登録します。
+
+--version や --help の説明をサマリの最後に表示したい時に便利です。
+
+@param arg [[m:OptionParser#on]] と同様です。
+
+@param block [[m:OptionParser#on]] と同様です。
+
+예:
+
+  opts.on_tail("-h", "--help", "Show this message") do
+    puts opts
+    exit
+  end
+
+  opts.on_tail("--version", "Show version") do
+    puts OptionParser::Version.join('.')
+    exit
+  end
+
+@see [[m:OptionParser#on]], [[m:OptionParser#on_head]]
+
+--- order(argv)                     -> [String]
+--- order(argv){|s| ...}            -> [String]
+--- order(*args)                    -> [String]
+--- order(*args){|s| ...}           -> [String]
+
+与えられた argv を順番にパースします。
+オプションではないコマンドの引数(下の例で言うと somefile)に出会うと、パースを中断します。
+argv からオプションを取り除いたものを返します。
+
+ブロックが与えられている場合は、パースを中断せずに引数をブロックに渡してブロックを評価し、
+パースを継続します。argv を返します。
+
+下の例で言うと、コマンドの引数 somefile よりも後ろにオプションを置くことができま
+せん。-b もコマンドのオプションではない引数として扱われてしまいます。
+
+@param argv パースしたい引数を文字列の配列で指定します。
+
+@param args パースしたい引数を順に文字列として与えます。
+
+@raise OptionParser::ParseError 분석이 실패하면 발생합니다.
+                                실제로 발생하는 예외는 OptionParser::ParseError의
+                                서브 클래스입니다.
+
+예:
+  $ cat opt.rb
+  require 'optparse'
+  opt = OptionParser.new
+
+  opt.on('-a [VAL]') {|v| p :a }
+  opt.on('-b') {|v| p :b }
+
+  opt.order!(ARGV)
+  p ARGV
+
+  $ ruby opt2.rb -a foo somefile -b
+  :a
+  ["somefile", "-b"]
+
+--- order!(argv = self.default_argv)             -> [String]
+--- order!(argv = self.default_argv) {|s| ...}   -> [String]
+
+与えられた argv を順番に破壊的にパースします。
+argv からオプションがすべて取り除かれます。
+argv を返します。
+
+オプションではないコマンドの引数(下の例で言うと somefile)に出会うと、パースを中断します。
+ブロックが与えられている場合は、パースを中断せずに
+引数をブロックに渡してブロックを評価し、パースを継続します。argv を返します。
+
+下の例で言うと、コマンドの引数 somefile よりも後ろにオプションを置くことができません。
+-b もコマンドのオプションではない引数として扱われてしまいます。
+
+@param argv パースしたい引数を文字列の配列で指定します。
+
+@raise OptionParser::ParseError 분석이 실패하면 발생합니다.
+                                실제로 발생하는 예외는 OptionParser::ParseError의
+                                서브 클래스입니다.
+
+예:
+  $ cat opt.rb
+  require 'optparse'
+  opt = OptionParser.new
+
+  opt.on('-a [VAL]') {|v| p :a }
+  opt.on('-b') {|v| p :b }
+
+  opt.order!(ARGV)
+  p ARGV
+
+  $ ruby opt2.rb -a foo somefile -b
+  :a
+  ["somefile", "-b"]
+
+--- permute(argv)            -> [String]
+--- permute(*args)           -> [String]
+
+与えられた argv をパースします。
+オプションではないコマンドの引数(下の例で言うと somefile)があってもパースを中断しません。
+argv からオプションを取り除いたものを返します。
+
+下の例で言うと、order と違いコマンドの引数 somefile よりも後ろにオプションを置くことが
+できます。
+
+@param argv パースしたい引数を文字列の配列で指定します。
+
+@param args パースしたい引数を順に文字列として与えます。
+
+@raise OptionParser::ParseError 분석이 실패하면 발생합니다.
+                                실제로 발생하는 예외는 OptionParser::ParseError의
+                                서브 클래스입니다.
+
+예:
+
+  $ cat opt.rb
+  require 'optparse'
+  opt = OptionParser.new
+
+  opt.on('-a [VAL]') {|v| p :a }
+  opt.on('-b ') {|v| p :b }
+
+  opt.permute!(ARGV)
+  p ARGV
+
+  $ ruby opt2.rb -a foo somefile -b
+  :a
+  :b
+  ["somefile"]
+
+--- permute!(argv = self.default_argv)    -> [String]
+
+与えられた argv を破壊的にパースします。argv からオプションがすべて取り除かれます
+オプションではないコマンドの引数(下の例で言うと somefile)があってもパースを中断しません。
+argv を返します。
+
+下の例で言うと、order と違いコマンドの引数 somefile よりも後ろにオプションを置くことが
+できます。
+
+@param argv パースしたい引数を文字列の配列で指定します。
+
+@raise OptionParser::ParseError 분석이 실패하면 발생합니다.
+                                실제로 발생하는 예외는 OptionParser::ParseError의
+                                서브 클래스입니다.
+
+예:
+
+  $ cat opt.rb
+  require 'optparse'
+  opt = OptionParser.new
+
+  opt.on('-a [VAL]') {|v| p :a }
+  opt.on('-b ') {|v| p :b }
+
+  opt.permute!(ARGV)
+  p ARGV
+
+  $ ruby opt2.rb -a foo somefile -b
+  :a
+  :b
+  ["somefile"]
+
+--- parse(argv)           -> [String]
+--- parse(*args)          -> [String]
+
+与えられた argv をパースします。
+argv からオプションを取り除いたものを返します。
+
+[[m:OptionParser#permute]] と同様に振舞います。しかし、
+環境変数に POSIXLY_CORRECT が設定されている場合は、
+[[m:OptionParser#order]] と同様に振舞います。
+
+@param argv パースしたい引数を文字列の配列で指定します。
+
+@param args パースしたい引数を順に文字列として与えます。
+
+@raise OptionParser::ParseError 분석이 실패하면 발생합니다.
+                                실제로 발생하는 예외는 OptionParser::ParseError의
+                                서브 클래스입니다.
+
+--- parse!(argv = self.default_argv)   -> [String]
+
+与えられた argv をパースします。
+
+[[m:OptionParser#permute!]] と同様に argv を破壊的にパースします。
+環境変数に POSIXLY_CORRECT が設定されている場合は、
+[[m:OptionParser#order!]] と同様に振舞います。
+
+@param argv パースしたい引数を文字列の配列で指定します。
+
+@raise OptionParser::ParseError 분석이 실패하면 발생합니다.
+                                실제로 발생하는 예외는 OptionParser::ParseError의
+                                서브 클래스입니다.
+
+--- load(filename = nil)     -> bool
+
+指定された filename を読み込んで各行をまとめたものに対して [[m:OptionParser#parse]] を行ないます。
+
+パースが成功した場合に true を返します。
+ファイルが存在しなかった場合に false を返します。
+
+@param filename 各行をパースしたいファイルの名前を文字列で指定します。                指定されないか nil である場合、~/.options/ に
+                プログラムのサフィックスを付けた '~/.options/コマンド名' というファイルをパースします。
+
+--- environment(env)    -> [String]
+
+環境変数 env に対して
+[[m:Shellwords.#shellwords]] を呼
+んで配列にしてから parse を行ないます。
+
+@param env 環境変数名を文字列で与えます。
+
+@raise OptionParser::ParseError 분석이 실패하면 발생합니다.
+                                실제로 발생하는 예외는 OptionParser::ParseError의
+                                서브 클래스입니다.
+
+#@since 1.8.3
+--- default_argv    -> [String]
+
+自身がデフォルトでパースする引数を文字列の配列で返します。
+
+@param argv デフォルトでパースする文字列の配列を返します。
+
+--- default_argv=(argv)
+
+自身がデフォルトでパースする引数を文字列の配列で指定します。
+
+[[m:OptionParser#parse]] の引数が指定されなかったときに使われます。
+
+@param argv デフォルトでパースしたい文字列の配列を指定します。
+
+#@end
+
+#@since 1.8.5
+--- getopts(argv, *opts)   -> Hash
+--- getopts(*opts)         -> Hash
+
+#@until 1.9.1
+[[lib:getopts]] 相当の機能を提供します。
+getopts と違って、グローバル変数を定義しません。
+#@end
+引数をパースした結果を、Hash として返します。
+
+配列 argv を与えた場合、argv をパースします。そうでない場合は、
+default_argv をパースします。
+
+ opt = OptionParser.new
+ params = opt.getopts(ARGV, "ab:", "foo", "bar:")
+ # params["a"] = true   # -a
+ # params["b"] = "1"    # -b1
+ # params["foo"] = true  # --foo
+ # params["bar"] = "x"  # --bar x
+
+@param argv 분석하려는 배열을 지정합니다.
+
+#@since 1.9.1
+@param opts 인수를 문자열로 지정합니다.
+#@else
+@param opts 引数を文字列で指定します。[[m:Kernel#getopts]]를 참조해주세요.
+#@end
+
+@raise OptionParser::ParseError 분석이 실패하면 발생합니다.
+                                실제로 발생하는 예외는 OptionParser::ParseError의
+                                서브 클래스입니다.
+
+#@end

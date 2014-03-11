@@ -1,0 +1,45 @@
+= class NameError < StandardError
+
+정의되지 않은 지역 변수나 상수를 사용하려고 하면 발생합니다.
+
+
+== Class Methods
+
+#@since 1.8.0
+--- new(error_message = "", name = nil) -> NameError
+
+예외 객체를 리턴합니다.
+
+@param error_message 에러 메시지를 나타내는 문자열을 지정합니다.
+
+@param name 정의되어 있지 않았던 변수나 상수의 이름
+
+예:
+
+  err = NameError.new("message", "foo")
+  p err       # => #<NameError: message>
+  p err.name  # => "foo"
+#@end
+
+
+== Instance Methods
+
+--- name -> Symbol
+
+예외가 발생한 원인이 된 변수나 상수, 메소드의 심볼을 리턴합니다.
+
+예:
+
+  begin
+    foobar
+  rescue NameError => err
+    p err       # => #<NameError: undefined local variable or method `foobar' for main:Object>
+    p err.name  # => :foobar
+  end
+
+#@since 1.8.1
+--- to_s -> String
+
+예외 객체를 문자열로 변환해서 리턴합니다.
+
+#@end

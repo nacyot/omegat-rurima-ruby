@@ -1,0 +1,289 @@
+= class Integer < Numeric
+#@until 1.9.1
+include Precision
+#@end
+
+정수의 추상 클래스.[[c:Fixnum]]과 [[c:Bignum]] 클래스가 Integer의 서브 클래스입니다.이 두 클래스는 크기에 따라 자동적으로 변환됩니다.ビット操作において整数は無限の長さのビットストリングとみなすことが
+できます。
+
+
+== Class Methods
+
+#@until 1.9.1
+--- induced_from(num) -> Integer
+
+num을 Integer로 변환해서 리턴합니다.
+인수가 수치를 나타내면 소수부는 버리며 그렇지 않으면 TypeError을 발생시킵니다.
+
+  Integer.induced_from 1.4  #=> 1
+  Integer.induced_from 1.9  #=> 1
+  Integer.induced_from -1.9 #=> -1
+  Integer.induced_from '1'  #=> TypeError
+
+
+include된 [[c:Precision]] 모듈의 [[m:Precision.induced_from]] 메소드를
+덮어씁니다.
+
+@param num   수치
+@return      수치
+#@end
+
+
+== Instance Methods
+
+#@until 1.9.1
+--- chr -> String
+
+문자 코으ㅔ 대응하는 1바이트 문자열을 리턴합니다.
+
+예를 들어 65.chr은 "A"를 리턴합니다.
+
+반대로 문자열을 문자코드로 변환하려면 "A"[0]을 사용합니다.
+
+@return     1바이트 문자열
+@raise RangeError self가 0에서 255 범위를 벗어나면 발생합니다.
+@see [[m:String#[] ]]
+#@else
+--- chr -> String
+--- chr(encoding) -> String
+
+self에 대해 인코딩 인수 encoding의 문자코드에 대응하는 문자열을 리턴합니다.
+인수가 없이 호출되면 self는 US-ASCII, ASCII-8BIT, 기본 인코딩 순으로 변환을 시도합니다.
+
+  p 65.chr # => "A"
+  p 0x79.chr.encoding # => #<Encoding:US_ASCII>
+  p 0x80.chr.encoding # => #<Encoding:ASCII_8BIT>
+  p 12354.chr Encoding::UTF_8 # => "あ"
+  p 12354.chr Encoding::EUC_JP
+  # => RangeError: invalid codepoint 0x3042 in EUC-JP
+  p 12354.chr Encoding::ASCII_8BIT
+  # => RangeError: 12354 out of char range
+  p (2**32).chr
+  # => RangeError: bignum out of char range
+
+@param encoding エンコーディングを表すオブジェクト。Encoding::UTF_8、'shift_jis' など。@return     一文字からなる文字列
+@raise RangeError self を与えられたエンコーディングで正しく解釈できない場合に発生します。@see [[m:String#ord]]
+#@end
+
+--- downto(min) {|n| ... } -> self
+#@since 1.8.7
+#@since 1.9.1
+--- downto(min) -> Enumerator
+#@else
+--- downto(min) -> Enumerable::Enumerator
+#@end
+#@end
+
+self에서 min까지 1씩 줄여나가며 블록을 반복해 실행합니다.
+self < min이면 아무것도 하지 않습니다.
+
+@param min   수치
+@return      self를 리턴합니다.
+
+@see [[m:Integer#upto]], [[m:Numeric#step]], [[m:Integer#times]]
+
+--- next -> Fixnum | Bignum
+--- succ -> Fixnum | Bignum
+
+self의 다음 정수를 리턴합니다.
+
+--- times {|n| ... } -> self
+#@since 1.8.7
+#@since 1.9.1
+--- times -> Enumerator
+#@else
+--- times -> Enumerable::Enumerator
+#@end
+#@end
+
+self 번 반복합니다.
+self가 음수이면 아무것도 하지 않습니다.
+
+블록인자에는 0부터 self-1까지의 숫자가 넘겨집니다.
+
+  3.times { puts "Hello, World!" }  # Hello, World!를 3번 연속해서 출력합니다.
+  0.times { puts "Hello, World!" }  # 아무것도 출력하지 않습니다.
+  5.times {|n| print n }            # 01234 를 출력합니다.
+
+@see [[m:Integer#upto]], [[m:Integer#downto]], [[m:Numeric#step]]
+
+--- to_i   -> self
+--- to_int -> self
+
+self를 리턴합니다.
+
+--- to_s -> String
+#@since 1.8.0
+--- to_s(base) -> String
+#@end
+
+정수를 10진 문자열 표현으로 변환합니다.
+
+#@since 1.8.0
+진수(base)를 지정하면 해당하는 진수를 기준으로 문자열로 변환합니다.
+
+    p 10.to_s(2)    # => "1010"
+    p 10.to_s(8)    # => "12"
+    p 10.to_s(16)   # => "a"
+    p 35.to_s(36)   # => "z"
+#@end
+
+@return     数値の文字列表現
+#@since 1.8.0
+@param base 基数となる 2 - 36 の数値。@raise ArgumentError base に 2 - 36 以外の数値を指定した場合に発生します。#@end
+
+--- upto(max) {|n| ... } -> Fixnum | Bignum
+#@since 1.8.7
+#@since 1.9.1
+--- upto(max) -> Enumerator
+#@else
+--- upto(max) -> Enumerable::Enumerator
+#@end
+#@end
+
+self에서 max까지 1씩 늘려나가며 반복합니다.
+self > max이면 아무것도 하지 않습니다.
+
+@param max   수치
+@return      self를 리턴합니다.
+
+@see [[m:Integer#downto]], [[m:Numeric#step]], [[m:Integer#times]]
+
+--- integer?-> true
+
+항상 true를 리턴합니다.
+
+#@since 1.8.7
+--- even?-> bool
+
+짝수이면 true를 리턴합니다.
+그렇지 않으면 false를 리턴합니다.
+
+
+--- odd?-> bool
+
+홀수이면 true를 리턴합니다.
+그렇지 않으면 false를 리턴합니다.
+
+
+--- ord    -> Integer
+self를 리턴합니다.
+
+   10.ord    #=> 10
+#@since 1.9.1
+   # String#ord
+#@end
+   ?a.ord    #=> 97
+
+#@since 1.9.1
+@see [[m:String#ord]]
+#@end
+
+--- pred    -> Integer
+
+self에서 1을 뺀 값을 리턴합니다.
+
+   1.pred      #=> 0
+   (-1).pred   #=> -2
+
+#@end
+
+#@since 1.9.1
+--- denominator -> Integer
+
+분모를 리턴합니다. 항상 1입니다.
+
+@return 분모를 리턴합니다.
+
+@see [[m:Integer#numerator]]
+
+--- gcd(n) -> Integer
+
+self와 정수 n의 최대공약수를 리턴합니다.
+
+@raise ArgumentError n에 정수가 아닌 객체를 지정하면 발생합니다.
+
+예:
+
+  2.gcd(2)                    # => 2
+  3.gcd(7)                    # => 1
+  3.gcd(-7)                   # => 1
+  ((1<<31)-1).gcd((1<<61)-1)  # => 1
+
+self나 n에 0이면 0이 아닌 수의 절대값을 리턴합니다.
+
+  3.gcd(0)                    # => 3
+  0.gcd(-7)                   # => 7
+
+@see [[m:Integer#lcm]], [[m:Integer#gcdlcm]]
+
+--- gcdlcm(n) -> [Integer]
+
+自身と整数 n の最大公約数と最小公倍数の配列 [self.gcd(n), self.lcm(n)]
+を返します。
+
+@raise ArgumentError n에 정수가 아닌 객체를 지정하면 발생합니다.
+
+예:
+
+  2.gcdlcm(2)                    # => [2, 2]
+  3.gcdlcm(-7)                   # => [1, 21]
+  ((1<<31)-1).gcdlcm((1<<61)-1)  # => [1, 4951760154835678088235319297]
+
+@see [[m:Integer#gcd]], [[m:Integer#lcm]]
+
+--- lcm(n) -> Integer
+
+self와 정수 n의 최소공배수를 리턴합니다.
+
+@raise ArgumentError n에 정수가 아닌 객체를 지정하면 발생합니다.
+
+예:
+
+  2.lcm(2)                    # => 2
+  3.lcm(-7)                   # => 21
+  ((1<<31)-1).lcm((1<<61)-1)  # => 4951760154835678088235319297
+
+self나 n이 0이면 0을 리턴합니다.
+
+  3.lcm(0)                    # => 0
+  0.lcm(-7)                   # => 0
+
+@see [[m:Integer#gcd]], [[m:Integer#gcdlcm]]
+
+--- numerator -> Integer
+
+분자를 리턴합니다. 항상 self입니다.
+
+@return 분자를 리턴합니다.
+
+@see [[m:Integer#denominator]]
+
+--- to_r -> Rational
+
+self를 [[c:Rational]]으로 변환합니다.
+
+예:
+
+  1.to_r        # => (1/1)
+  (1<<64).to_r  # => (18446744073709551616/1)
+
+#@end
+
+#@since 1.9.2
+--- rationalize      -> Rational
+--- rationalize(eps) -> Rational
+
+self를 [[c:Rational]]으로 변환합니다.
+
+@param eps 허용 오차.
+
+인수 eps는 무시됩니다.
+
+예:
+
+  2.rationalize      # => (2/1)
+  2.rationalize(100) # => (2/1)
+  2.rationalize(0.1) # => (2/1)
+
+#@end

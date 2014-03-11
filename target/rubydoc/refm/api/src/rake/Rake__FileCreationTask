@@ -1,0 +1,15 @@
+= class Rake::FileCreationTask < Rake::FileTask
+
+このタスクはファイルが存在しない場合にファイルを作成するタスクです。
+
+対象のファイルが存在する場合は実行されません。
+
+== Public Instance Methods
+
+--- needed?-> bool
+
+ファイルが存在しない場合、真を返します。그렇지 않은 경우엔 false를 반환합니다.
+
+--- timestamp -> Rake::EarlyTime
+
+どんなタイムスタンプよりも前の時刻をあらわすタイムスタンプを返します。

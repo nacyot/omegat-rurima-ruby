@@ -1,0 +1,1987 @@
+= class IO < Object
+
+include Enumerable
+#@if (version >="1.8.0")
+include File::Constants
+#@end
+
+기본적인 입출력을 다루기 위한 클래스입니다.
+
+#@#  * [[unknown:Traps: IO 포트 오픈에 관련된 문제|trap::IO]] @@@
+
+#@if (version >="1.8.0")
+File::Constants는 [[c:File]]에서 IO로 이전되었습니다.
+#@end
+
+#@since 1.9.1
+===[a:m17n] 다중언어화와 IO의 인코딩
+
+IO 객체는 인코딩을 가집니다.
+인코딩에 영향을 받는 메소드와 그렇지 않은 메소드가 있습니다.
+
+영향을 받는 메소드에서는 IO의 인코딩에 따라 읽어들인 문자열의 인코딩이 결정됩니다.
+또한 IO 인코딩을 적절하게 설정해서 읽거나 쓸 때 문자열의 인코딩을 변환할 수도 있습니다.
+
+==== 인코딩에 영향을 받는 메소드와 그렇지 않은 메소드
+
+IO 읽기 메소드는 2가지고 준비되어 있습니다.
+텍스트를 읽어오는 메소드와 바이너리 데이터를 읽어오는 메소드입니다.
+
+텍스트를 읽어오는 메소드는 IO의 인코딩에 영향을 받습니다.
+자세한 내용은「[[ref:io_encoding]]」을 참조해주세요.
+아래는 읽기 메소드 목록입니다.
+
+ * [[m:IO.foreach]]
+ * [[m:IO.readlines]]
+ * [[m:IO#each_line]]
+ * [[m:IO#lines]]
+ * [[m:IO#gets]]
+ * [[m:IO#getc]]
+ * [[m:IO#ungetc]]
+ * [[m:IO#read]]
+ * [[m:IO#readchar]]
+ * [[m:IO#readline]]
+ * [[m:IO#readlines]]
+
+바이너리 읽기 메소드는 IO 객체의 인코딩 설정에 영향을 받지 않습니다.
+리턴하는 문자열의 인코딩은 항상 ASCII-8BIT입니다.
+아래가 바이너리 읽기 메소드 목록입니다.
+
+ * [[m:IO#read]](size) 
+ * [[m:IO#read_nonblock]]
+ * [[m:IO#readpartial]]
+ * [[m:IO#sysread]]
+
+쓰기 메소드 [[m:IO#write]]도 IO 객체의 인코딩에 영향을 받지 않습니다.
+IO의 모든 쓰기 메소드는 내부에서 [[m:IO#write]] 호출하므로
+모든 쓰기 메소드는 인코딩의 영향을 받지 않습니다.
+
+@@@에 관련된 메소드도 인코딩의 영향을 받지 않습니다.
+항상 1바이트 단위로 작동합니다.
+
+예:
+
+  f = File.open('t.txt', 'r+:euc-jp')
+  p f.getc.encoding                             #=> Encoding::EUC_JP
+  p f.read(1).encoding                          #=> Encoding::ASCII_8BIT 
+
+====[a:io_encoding] IO 인코딩과 인코딩 변환
+
+IO 객체는 외부 인코딩과 내부 인코딩을 가지고 있습니다.
+외부 인코딩이란 IO가 나타내는 파일 따위의 문자 인코딩입니다.
+내부 인코딩이란 IO에서 읽어온 문자열이나 IO의 쓰기 메소드에 넘겨지는 문자열의 인코딩을 의미합니다.
+
+아래의 세 가지 경우를 생각해볼 수 있습니다.
+
+: IO 인코딩이 지정되지 않은 경우
+
+  [[m:Encoding.default_external]](외부인코딩)이 IO에서 텍스트 읽기 메소드로 읽어온 문자열의 인코딩으로
+  설정됩니다.이 때 실제 문자 인코딩의 검사나 변환은 이루어지지 않습니다.
+
+: 외부 인코딩만 지정된 경우
+
+ IO에서 텍스트 읽기 메소드로 읽어온 문자열의 인코딩이 미리 지정되어있는 외부 인코딩으로
+ 설정됩니다.이 때 실제 문자 인코딩의 검사나 변환은 이루어지지 않습니다.
+
+ IO에 쓰여지는 문자열의 인코딩은 미리 지정된 외부 인코딩으로 변환됩니다.
+ 변환을 할 수 없으면 예외가 발생합니다.
+
+: 외부 인코딩과 외부 인코딩(혹은 default_internal)이 지정된 경우
+ IO에서 텍스트 읽기 메소드로 읽어온 문자열은 외부 인코딩에서
+ 내부 인코등(혹은 default_internal)로 변환됩니다.
+ 지정된 문자 인코딩이 실제 문자 인코딩과 다르면 예외가 발생합니다.
+ 내부 인코딩과 [[m:Encoding.default_internal]]이 둘 다 설정되어있으면
+ 내부 인코딩이 우선합니다.
+
+ IO에 쓰여지는 문자열의 인코딩은 미리 지정된 외부 인코딩으로 변환됩니다.
+ 변환을 할 수 없으면 예외가 발생합니다.
+
+
+IO 객체 의 인코딩을 지정하는 방법은 객체를 생성한는 [[m:IO.open]] 메소드나 [[m:File.open]] 메소드 호출 시에 지정하는 방법이 있고 객체 생성 후에[[m:IO#set_encoding]] 메소드를 사용해 지정하는 방법이 있습니다.자세한 사항은 각각의 메소드를 참조해주세요.일반적으로 전자가 많이 사용됩니다.
+
+예1:
+
+  f = File.open('file1')
+  p f.getc.encoding        #=> Encoding::EUC_JP
+
+예2:
+
+  f = File.open('t.txt', 'w+:shift_jis:euc-jp')
+  f.write "\xB4\xC1\xBB\xFA"            # "漢字"를 나타내는 EUC-JP 문자열
+  f.rewind
+  s = f.read(4)
+  puts s.dump                           #=> "\x8A\xBF\x8E\x9A" 
+                                        # 인코딩인 SJIS로 변환된 걸 알 수 있습니다.
+
+===== 정리
+
+위의 내용은 아래의 표로 종합할 수 있습니다.[[m:Encoding.default_external]]는 항상 설정되어있으므로 표에는 생략되어있습니다.
+
+읽어온 문자열의 인코딩
+                                                    바이너리 읽기 메소드     텍스트 읽기 메소드
+ ----------------------------------------------------------------------------------------------------------
+                                         지정 없음        ASCII-8BIT                   default_external
+ 
+                            default_internal만 있는 경우        ASCII-8BIT                   default_internal
+ 
+                         외부 인코딩만 있는 경우        ASCII-8BIT                 외부 인코딩
+ 
+                     내부 인코딩이 지정된 겨우        ASCII-8BIT                 내부 인코딩
+  
+     내부 인코딩과 default_internal 둘 다 있는 경우        ASCII-8BIT                 내부 인코딩
+
+인코딩 변환
+                                               바이너리 읽기 메소드   텍스트 읽기 메소드   텍스트 쓰기 메소드
+ ---------------------------------------------------------------------------------------------------------------------
+                                   지정 없음           변환 없음                 변환 없음                   변환 없음
+
+                   외부 인코딩만 있는 경우           변환 없음                 변환 없음                   변환 없음
+         
+                      default_internal만 있는 경우           변환 없음                 변환 없음                   변환 없음 
+  
+                   내부 인코딩만 있는 경우           변환 없음                 변환 없음                   변환 없음
+
+ 외부 인코딩과 내부 인코딩 둘 다 있 있는 경우           변환 없음                 변환 없음                   변환 없음
+
+    외부 인코딩과 default_internal           변환 없음                 변환 없음                   변환 없음
+
+==== 외부 인코딩 기본값 설정
+
+[[m:Encoding.default_external]]은 명령어 옵션 -E로 설정할 수 있습니다.
+-E 옵션이 없으면 아래와 같은 우선 순위를 따릅니다.
+
+ -E (최우선) > -K > locale
+
+==== 파일명의 인코딩
+
+파일명의 문자 인코딩은 시스템에 의존합니다.
+파일명의 문자 인코딩이 고정되어 있는 윈도우와 맥에서는
+인코딩이 암묵적으로 변환됩니다.UNIX에서는 변환되지 않고 그대로 시스템 호출에 넘겨집니다.
+
+마찬가지로 [[m:Dir.glob]], [[m:Dir.foreach]] 에서 리턴하는 파일명의 인코딩도 시스템의 의존적입니다.
+#@#Win, Mac에선 UTF-8입니다.(예정)UNIX에선 ASCII-8BIT입니다.
+
+==== binmode
+
+Windows의 IO에는 텍스트 모드와 바이너리 모드, 이렇게 2가지 모드가 존재합니다.
+여기서 이야기하는 모드는 위에서 설명한 IO 객체의 인코딩과는 무관하며줄바꿈 변환에면 영향을 줍니다.
+
+#@end
+
+=== 각 메소드별 EOF 처리의 차이점
+
+각 메소드에서 비어있는 파일이나 EOF를 처리하는 방식은 다음과 같습니다.
+단 length를 지정할 수 있는 메소드는 length에 nil이나 0을 지정하면
+EOF에 접근해도 항상 빈 문자열 ""을 리턴합니다.
+#@if (version < "1.9.1")
+단 [[m:IO#read]](0)는 EOF에서 nil을 리턴합니다.
+#@end
+
+//emlist{
+메소드                      빈 파일의 처리
+
+IO.read(빈파일)           ""
+IO.read(빈파일, length)   nil
+IO.readlines(빈파일)      []
+IO.foreach(빈파일)        아무것도 하지 않음
+//}
+
+//emlist{
+메소드                      EOF 도달시 처리
+
+#@until 1.9.1
+IO#each                       아무것도 하지 않음
+#@end
+IO#each_byte                  아무것도 하지 않음
+IO#getc                       nil
+IO#gets                       nil
+IO#read()                     ""
+IO#read(length)               nil
+#@since 1.8.5
+IO#read_nonblock              EOFError
+#@end
+IO#readchar                   EOFError
+IO#readline                   EOFError
+IO#readlines                  []
+#@since 1.8.3
+IO#readpartial                EOFError
+#@end
+IO#sysread                    EOFError
+#@since 1.9.1
+IO#bytes                      원래 처리 방식과 차이 없음
+IO#lines                      원래 처리 방식과 차이 없음
+#@end
+//}
+
+
+== Class Methods
+
+#@since 1.9.1
+
+--- copy_stream(src, dst, copy_length = nil)             -> Integer
+--- copy_stream(src, dst, copy_length, src_offset) -> Integer
+
+지정된 src에서 dst에 복사합니다.
+복사한 바이트 수를 리턴합니다.
+
+복사하려는 src가 IO 객체이면 src의 옵프셋에서부터 복사하고 
+src가 파일명이면 파일 맨 처음부터 복사합니다.
+dst도 마찬가지입니다.
+
+dst에 파일명을 지정했을 때 파일이 존재하지 않으면
+새로운 파일을 만듭니다.파일이 존재하면 길이를 0으로 잘라냅니다.
+
+src가 IO 객체이고 src_offset이 지정되어 있으면
+src의 옵셋(src.pos)는 변경되지 않습니다.
+
+@param src コピー元となる IO オブジェクトかファイル名を指定します。
+
+@param dst コピー先となる IO オブジェクトかファイル名を指定します。
+
+@param copy_length コピーする長さをバイト単位で指定します。最大 copy_length までコピーされます。                   nil を指定した場合、コピーする長さに制限はありません。
+
+@param src_offset  コピーを始めるオフセットを数値で指定します。
+
+--- try_convert(obj) -> IO | nil
+
+obj를 to_io 메소드를 사용해 [[c:IO]] 객체로 변환합니다.
+변환에 실패하면 nil을 리턴합니다.
+
+   IO.try_convert(STDOUT)     # => STDOUT
+   IO.try_convert("STDOUT")   # => nil
+
+#@end
+
+#@until 1.9.1
+--- new(fd, mode = "r")                -> IO
+--- for_fd(fd, mode = "r")             -> IO
+--- open(fd, mode = "r")               -> IO
+--- open(fd, mode = "r") {|io| ... }   -> object
+#@else
+--- new(fd, mode = "r", opt={})                -> IO
+--- for_fd(fd, mode = "r", opt={})             -> IO
+--- open(fd, mode = "r", opt={})               -> IO
+--- open(fd, mode = "r" opt={}) {|io| ... }   -> object
+#@end
+
+オープン済みのファイルディスクリプタ fd に対する新しい
+IO オブジェクトを生成して返します。
+
+IO.open にブロックが与えられた場合、IO オブジェクトを生成しそれを引数としてブロックを
+実行します。블록이 종료되면 fd는 자동적으로 닫힙니다.블록의 결과를 리턴합니다.
+IO.new, IO.for_fo는 블록을 넘겨받지 않습니다.
+
+#@since 1.9.1
+=== 옵션 인수
+이 메소드에서는 아래와 같은 옵션을 사용할 수 있습니다.
+  * :mode mode 인수와 같습니다.
+  * :external_encoding 외부 인코딩"-"은 외부 인코딩 기본설정값의
+    별칭입니다.
+  * :internal_encoding 내부 인코딩"-"은 내부 인코딩 기본설정값의
+    별칭입니다.nil이면 변환하지 않습니다.
+  * :encoding "extenc:intenc" 형식으로 외부/내부 인코딩을 지정할 수 있습니다.
+  * :textmode true를 지정하면 mode의 t와 같은 의미를 가집니다.
+  * :binmode true를 지정하면 mode의 b와 같은 의미를 가집니다.
+#@since 1.9.2
+  * :autoclose 偽を渡すと close時/GCでのファイナライザ呼出時に fd を close しません。#@end
+また、[[m:String#encode]] で説明されている :invalid => :replace などの
+変換オプションも指定することができます。外部エンコーディングから
+内部エンコーディングへの変換をするときに用いられます。
+
+#@end
+
+@param fd ファイルディスクリプタである整数を指定します。
+
+@param mode [[m:Kernel.#open]] と同じ形式で IO のモードを指定します。[[m:File::Constants::RDONLY]] などの
+            定数(数値)でモードを指定できます。詳細は組み込み関数 [[m:Kernel.#open]] を参照
+            해주세요.
+            mode는 생략가능하면 기본설정값은
+            [[man:fcntl(2)]] で F_GETFL フラグが利用できる環境では第一引数で指定した fd のモードを引き継ぎ、
+            利用できない環境では "r" になります。
+
+#@since 1.9.1
+@param opt 옵션 인수
+#@end
+
+@raise Errno::EXXX IO 객체를 생성하지 못 하면 발생합니다.
+
+--- foreach(path, rs = $/) {|line| ... }    -> nil
+#@since 1.8.7
+#@since 1.9.1
+--- foreach(path, rs = $/)                  -> Enumerator
+#@else
+--- foreach(path, rs = $/)                  -> Enumerable::Enumerator
+#@end
+#@end
+
+path에 지정된 파일의 각행을 인수로 블록을 반복하여 실행합니다.
+path에 지정된 파일을 성공적을 열었으면 nil을 리턴합니다.
+
+#@since 1.8.7
+ブロックが与えられなかった場合は、path で指定されたファイルの各行を繰り返す
+#@since 1.9.1
+[[c:Enumerator]] オブジェクトを生成して返します。#@else
+[[c:Enumerable::Enumerator]] 객체를 생성해서 리턴합니다.
+#@end
+#@end
+
+#@since 1.9.1
+텍스트 읽기 메소드로 작동합니다.
+#@end
+path의 파일이 비어있으면 아무것도 하지 않고 nil을 리턴합니다.
+[[m:Kernel.#open]]와 마찬가지로 path의 맨 앞 문자가 "|"이면, "|"에 뒤따르는 명령어의 실행결과를 읽어옵니다.
+
+@param path 파일명을 나타내는 문자열이나 "|명령어"를 지정합니다.
+
+@param rs 행 구분 문자를 지정합니다.rs에 nil을 지정하면 줄바꿈을 행 구분 문자로 사용합니다.
+          빈 문자열 ""를 지정하면 연속되는 줄바꿈을 행 구분 문자로 사용합니다.(문단 모드)
+
+@raise Errno::EXXX path에 지정된 파일을 읽어오지 못 하면 발생합니다.
+
+@see [[m:$/]]
+
+--- pipe                    -> [IO]
+#@since 1.9.1
+--- pipe(ext_enc)           -> [IO]
+--- pipe(enc_str, opts={})           -> [IO]
+--- pipe(ext_enc, int_enc, opts={})  -> [IO]
+#@since 1.9.2
+--- pipe{|read_io, write_io| ... } -> object
+--- pipe(ext_enc){|read_io, write_io| ... } -> object
+--- pipe(enc_str, opt={}){|read_io, write_io| ... }           -> object
+--- pipe(ext_enc, int_enc, opt={}){|read_io, write_io| ... }  -> object
+#@end
+#@end
+
+[[man:pipe(2)]]를 실행해서 연결된 2개의
+[[c:IO]] 객체를 요소로 가지는 배열을 리턴합니다.
+
+리턴된 배열의 첫번째 값이 읽기 객체이고, 두번째 값이 쓰기 객체입니다.
+
+#@since 1.9.2
+블록이 넘겨지면 그 블록에 2개의 IO 객체를 넘겨주고
+블록의 평가 결과를 리턴합니다.
+블록이 끝날 때 IO 객체가 닫혀있지 않으면
+자동적으로 닫아줍니다.
+#@end
+
+#@since 1.9.1
+得られる2つの IO オブジェクトのエンコーディングを引数で指定することが
+できます。
+
+@param enc_str 読み込み側の外部エンコーディングを文字列で指定します。               文字列がコロンを挟んだ二つのエンコーディング名 "A:B" である場合
+               最初のものが外部エンコーディング、次が内部エンコーディングを意味します。
+
+@param ext_enc 読み込み側の外部エンコーディングを Encoding オブジェクトで指定します。
+
+@param int_enc 読み込み側の内部エンコーディングを Encoding オブジェクトで指定します。
+@param opt エンコーディングなどを設定するオプション引数(see [[m:IO.new]])
+#@end
+
+@raise Errno::EXXX IO オブジェクトの作成に失敗した場合に発生します。
+
+  r, w = IO.pipe
+  p [r, w]            # => [#<IO:0x401b90f8>, #<IO:0x401b7718>]
+  Thread.new do
+    w.puts "foo"
+    w.close
+  end
+  p r.gets           # => "foo\n"
+
+#@until 1.9.1
+--- popen(command, mode = "r")                -> IO
+--- popen(command, mode = "r") {|io| ... }    -> object
+#@else
+--- popen(command, mode = "r", opt={})                -> IO
+--- popen(command, mode = "r", opt={}) {|io| ... }    -> object
+#@end
+
+#@since 1.9.1
+command をサブプロセスとして実行し、そのプロセスの標準入出力
+との間にパイプラインを確立します。生成したパイプを [[c:IO]] オブジェクトとして返します。
+
+command が文字列の場合は、シェルを経由して子プロセスを実行します。command が配列の場合は、シェルを経由せずに子プロセスを実行します。#@else
+command をサブプロセスとして実行し、そのプロセスの標準入出力
+との間にパイプラインを確立します。command はシェルを経由して実行されます。生成したパイプを [[c:IO]] オブジェクトとして返します。#@end
+
+  p io = IO.popen("cat", "r+")  # => #<IO:0x401b75c8>
+  io.puts "foo"
+  io.close_write
+  p io.gets                     # => "foo\n"
+
+ブロックが与えられた場合は生成した IO オブジェクトを引数にブ
+ロックを実行し、その結果を返します。ブロックの実行後、生成したパイ
+プは自動的にクローズされます。
+
+  p IO.popen("cat", "r+") {|io|
+    io.puts "foo"
+    io.close_write
+    io.gets
+  }
+  # => "foo\n"
+
+#@since 1.9.1
+@param command コマンド名を文字列か配列で指定します。配列が指定された場合には、
+               シェルを経由せずに子プロセスを実行します。#@else
+@param command コマンド名を文字列で指定します。#@end
+
+@param mode オープンする IO ポートのモードを指定します。mode の詳細は [[m:Kernel.#open]] 参照して下さい。
+#@since 1.9.1
+@param opt エンコーディングなどを設定するオプション引数(see [[m:IO.new]])
+#@end
+
+@raise Errno::EXXX パイプ、あるいは子プロセスの生成に失敗した場合に発生します。
+
+#@until 1.9.1
+--- popen("-", mode = "r")                -> IO
+--- popen("-", mode = "r") {|io| ... }    -> object
+#@else
+--- popen("-", mode = "r", opt={})                -> IO
+--- popen("-", mode = "r", opt={}) {|io| ... }    -> object
+#@end
+
+第一引数に文字列 "-" が指定された時、[[man:fork(2)]] を
+行い子プロセスの標準入出力との間にパイプラインを確立します。
+親プロセスでは IO オブジェクトを返し、子プロセスでは
+nil を返します。
+
+  io = IO.popen("-", "r+")
+  if io  # parent
+    io.puts "foo"
+    p io.gets                   # => "child output: foo\n"
+    io.close
+  else   # child
+    s = gets
+    print "child output: " + s
+    exit
+  end
+  
+ブロックを与えられた場合、親プロセスでは生成した IO オブジェクトを引数に
+ブロックを実行し、その結果を返します。ブロックの実行後、生成したパイ
+プは自動的にクローズされます。子プロセスでは nil を引数にブロックを実行し終了します。  
+
+  p IO.popen("-", "r+") {|io|
+    if io   # parent
+      io.puts "foo"
+      io.gets
+    else    # child
+      s = gets
+      puts "child output: " + s
+    end
+  }
+  # => "child output: foo\n"
+
+@param mode オープンする IO ポートのモードを指定します。mode の詳細は [[m:Kernel.#open]] 参照して下さい。
+#@since 1.9.1
+@param opt エンコーディングなどを設定するオプション引数(see [[m:IO.new]])
+#@end
+
+@raise Errno::EXXX パイプ、あるいは子プロセスの生成に失敗した場合に発生します。
+
+#@since 1.8.0
+#@since 1.9.1
+--- read(path, opt = {})     -> String | nil
+--- read(path, length = nil, opt = {})     -> String | nil
+--- read(path, length = nil, offset = 0, opt = {})     -> String | nil
+#@else
+--- read(path, length = nil, offset = 0)     -> String | nil
+#@end
+
+path で指定されたファイルを offset 位置から
+length バイト分読み込んで返します。
+
+既に EOF に達している場合は nil を返します。ただし、length に nil か 0 が指定されている場合は、空文字列 "" を返します。例えば、IO.read(空ファイル) は "" を返します。
+
+#@since 1.9.1
+引数 length が指定された場合はバイナリ読み込みメソッド、そうでない場合はテキスト読み込みメソッドとして
+動作します。#@end
+
+[[m:Kernel.#open]]와 마찬가지로 path의 맨 앞 문자가 "|"이면, "|"에 뒤따르는 명령어의 실행결과를 읽어옵니다.
+
+@param path 파일명을 나타내는 문자열이나 "|명령어"를 지정합니다.
+
+@param length 読み込む長さを整数で指定します。nil であるか省略した場合には、EOF まで読み込みます。
+
+@param offset 読み込みを始めるオフセットを整数で指定します。
+
+#@since 1.9.1
+@param opt ファイル path を open する時に使われるオプションを Hash で指定します。#@end
+
+@raise Errno::EXXX path のオープン、offset 位置への設定、ファイルの読み込みに失敗した場合に発生します。
+
+@raise ArgumentError length が負の場合に発生します。
+
+#@since 1.9.1
+引数 opt で有効なキーと値は以下のとおりです。
+キーはいずれも Symbol オブジェクトです。
+
+: :encoding
+  
+  読み込んだ文字列のエンコーディングを指定します。  読み込む長さを指定した場合はこれは無視されます。
+
+: :mode
+  
+  [[m:IO.open]] のモードを指定します。  "r" で始まる文字列である必要があります。
+
+: :open_args
+  
+  [[m:IO.open]] に渡される引数を配列で指定します。
+
+これらの他、 :external_encoding など
+[[m:IO.open]] のオプション引数が指定できます。
+
+@see [[m:IO.binread]]
+
+#@end
+
+예:
+
+  IO.read(empty_file)             #=> ""
+  IO.read(empty_file, 1)          #=> nil
+  IO.read(one_byte_file, 0, 10)   #=> ""
+  IO.read(one_byte_file, nil, 10) #=> "" 
+  IO.read(one_byte_file, 1, 10)   #=> nil
+
+#@end
+
+#@since 1.9.1
+--- binread(path, length = nil, offset = 0)     -> String | nil
+path で指定したファイルを open し、offset の所まで seek し、
+length バイト読み込みます。
+
+length を省略するとファイルの末尾まで読み込みます。
+
+ファイルを開くときの mode は "rb:ASCII-8BIT" です。
+
+@see [[m:IO.read]]
+#@end
+
+#@until 1.9.1
+--- readlines(path, rs = $/)    -> [String]
+#@else
+--- readlines(path, rs = $/, opts={})
+--- readlines(path, limit, opts={})
+--- readlines(path, rs, limit, opts={})
+#@end
+
+path で指定されたファイルを全て読み込んで、その各行を要素としてもつ配列を返します。
+
+[[m:Kernel.#open]]와 마찬가지로 path의 맨 앞 문자가 "|"이면, "|"에 뒤따르는 명령어의 실행결과를 읽어옵니다.
+
+#@since 1.9.1
+텍스트 읽기 메소드로 작동합니다.
+
+limit で最大読み込みバイト数を指定します。ただしマルチバイト文字が途中で
+切れないように余分に読み込む場合があります。
+
+opts でファイルを開くときのオプションを指定します。エンコーディングなど
+を指定できます。[[m:File.open]] と同様なのでそちらを参照してください。#@end
+
+@param path 파일명을 나타내는 문자열이나 "|명령어"를 지정합니다.
+
+@param rs 행 구분 문자를 지정합니다.rs에 nil을 지정하면 줄바꿈을 행 구분 문자로 사용합니다.빈 문자열 ""를 지정하면 연속되는 줄바꿈을 행 구분 문자로 사용합니다.(문단 모드)#@since 1.9.1
+@param limit 最大の読み込みバイト数
+@param opts ファイルを開くときのオプション引数
+#@end
+
+@raise Errno::EXXX path のオープン、ファイルの読み込みに失敗した場合に発生します。
+
+--- select(reads, writes = [], excepts = [], timeout = nil)    -> [[IO]] | nil
+
+[[man:select(2)]] を実行します。
+
+与えられた入力/出力/例外待ちの  IO オブジェクトの中から準備ができたものを
+それぞれ配列にして、配列の配列として返します。
+タイムアウトした時には nil を返します。
+
+[[m:Kernel.#select]] と同じです。
+
+@param reads 入力待ちする [[c:IO]] オブジェクトの配列を渡します。
+
+@param writes 出力待ちする [[c:IO]] オブジェクトの配列を渡します。
+
+@param excepts 例外待ちする [[c:IO]] オブジェクトの配列を渡します。
+
+@param timeout タイムアウトまでの時間を表す数値または nil を指定します。数値で指定したときの単位は秒です。nil を指定した時には IO がどれかひとつレディ状態になるまで待ち続けます。
+
+@raise IOError 与えられた IO オブジェクトが閉じられていた時に発生します。
+
+@raise Errno::EXXX [[man:select(2)]] に失敗した場合に発生します。
+
+ rp, wp = IO.pipe
+ mesg = "ping "
+ 100.times{
+   rs, ws, = IO.select([rp], [wp])
+   if r = rs[0]
+     ret = r.read(5)
+     print ret
+     case ret
+     when /ping/
+       mesg = "pong\n"
+     when /pong/
+       mesg = "ping "
+     end
+   end
+   if w = ws[0]
+     w.write(mesg)
+   end
+ }
+
+#@if (version >="1.8.0")
+--- sysopen(path, mode = "r", perm = 0666)     -> Integer
+
+path で指定されるファイルをオープンし、ファイル記述子を返しま
+す。
+
+[[m:IO.for_fd]] などで IO オブジェクトにしない限り、このメソッ
+ドでオープンしたファイルをクローズする手段はありません。
+
+@param path ファイル名を表す文字列を指定します。
+
+@param mode モードを文字列か定数の論理和で指定します。[[m:Kernel.#open]] と同じです。
+
+@param perm [[man:open(2)]] の第 3 引数のように、ファイルを生成する場合の
+            ファイルのパーミッションを整数で指定します。[[m:Kernel.#open]] と同じです。
+
+@raise Errno::EXXX ファイルのオープンに失敗した場合に発生します。
+
+@see [[m:Kernel.#open]]
+
+#@end
+
+#@since 1.9.3
+--- write(path, string, offset=nil, opt={}) -> Integer
+path で指定されるファイルを開き、string を書き込み、
+閉じます。
+
+offset を指定するとその位置までシークします。
+
+offset を指定しないと、書き込みの末尾でファイルを
+切り捨てます。
+
+引数最後のハッシュはファイルを開くときに使われます。
+エンコーディングなどを指定することができます。
+詳しくは [[m:IO.open]] を見てください。
+
+@param path ファイル名文字列
+@param string 書き込む文字列
+@param offset 書き込み開始位置
+@param opt ファイルを開くときのオプション引数
+
+@see [[m:IO.binwrite]]
+
+--- binwrite(path, string, offset=nil) -> Integer
+path で指定されるファイルを開き、string を書き込み、
+閉じます。
+
+offset を指定するとその位置までシークします。
+
+offset を指定しないと、書き込みの末尾でファイルを
+切り捨てます。
+
+@param path ファイル名文字列
+@param string 書き込む文字列
+@param offset 書き込み開始位置
+
+@see [[m:IO.write]]
+
+#@end
+
+
+== Instance Methods
+
+--- <<(object)    -> self
+
+object を出力します。object が文字列でない時にはメソッ
+ド to_s を用いて文字列に変換します。
+
+以下のような << の連鎖を使うことができます。
+
+  STDOUT << 1 << " is a " << Fixnum << "\n"
+
+@param object 出力したいオブジェクトを与えます。
+
+@raise Errno::EXXX 出力に失敗した場合に発生します。
+
+--- binmode    -> self
+
+ストリームをバイナリモードにします。MSDOS などバイナリモードの存在
+する OS でのみ有効です。そうでない場合このメソッドは何もしません。
+
+バイナリモードから通常のモードに戻す方法は再オープンしかありません。
+
+@raise Errno::EXXX 권한 변경에 실패하면 발생합니다.
+
+--- clone    -> IO
+--- dup      -> IO
+
+レシーバと同じ IO を参照する新しい IO オブジェクトを返します。
+参照しているファイル記述子は [[man:dup(2)]] されます。
+
+clone の際に self は一旦 [[m:IO#flush]] されます。
+フリーズした IO の clone は同様にフリーズされた IO を返しますが、
+dup は内容の等しいフリーズされていない IO を返します。
+
+@raise IOError 既に close されていた場合に発生します。 
+
+--- close    -> nil
+
+入出力ポートをクローズします。
+
+以後このポートに対して入出力を行うと例外 [[c:IOError]] が発生しま
+す。ガーベージコレクトの際にはクローズされていない IO ポートはクロー
+ズされます。
+#@# [[unknown:Traps:closeをGCにまかせる|trap::IO]]
+self がパイプでプロセスにつながっていれば、そのプロセスの終
+了を待ち合わせます。
+
+@raise Errno::EXXX close に失敗した場合に発生します。
+
+@raise IOError 既に close されていた場合に発生します。
+
+--- close_read    -> nil
+
+読み込み用の IO を close します。主にパイプや読み書き両用に作成し
+た IO オブジェクトで使用します。
+
+@raise IOError 自身が読み込み用にオープンされていなければ発生します。
+
+@raise Errno::EXXX close に失敗した場合に発生します。
+
+--- close_write    -> nil
+
+書き込み用の IO を close します。
+
+@raise IOError 自身が書き込み用にオープンされていなければ発生します。
+
+@raise Errno::EXXX close に失敗した場合に発生します。
+
+--- closed?-> bool
+
+ポートがクローズされている時に真を返します。
+
+#@since 1.9.1
+--- each(rs = $/) {|line| ... }         -> self
+--- each(limit) {|line| ... }           -> self
+--- each(rs, limit) {|line| ... }       -> self
+--- each(rs = $/)                       -> Enumerator
+--- each(limit)                         -> Enumerator
+--- each(rs, limit)                     -> Enumerator
+--- each_line(rs = $/) {|line| ... }    -> self
+--- each_line(limit) {|line| ... }      -> self
+--- each_line(rs, limit) {|line| ... }  -> self
+--- each_line(rs = $/)                  -> Enumerator
+--- each_line(limit)                    -> Enumerator
+--- each_line(rs, limit)                -> Enumerator
+#@end
+#@until 1.9.1
+--- each(rs = $/) {|line| ... }         -> self
+--- each_line(rs = $/) {|line| ... }    -> self
+#@since 1.8.7
+--- each(rs = $/)                       -> Enumerable::Enumerator
+--- each_line(rs = $/)                  -> Enumerable::Enumerator
+#@end
+#@end
+
+IO の現在位置から 1 行ずつ文字列として読み込み、それを引数として
+与えられたブロックを実行します。
+
+#@since 1.8.7
+ブロックが与えられなかった場合は、自身から生成した
+#@since 1.9.1
+[[c:Enumerator]] オブジェクトを返します。#@else
+[[c:Enumerable::Enumerator]] 객체를 리턴합니다.
+#@end
+#@end
+
+#@since 1.9.1
+텍스트 읽기 메소드로 작동합니다.
+
+limit で最大読み込みバイト数を指定します。ただしマルチバイト文字が途中で
+切れないように余分に読み込む場合があります。
+
+#@end
+
+@param rs 행 구분 문자를 지정합니다.rs에 nil을 지정하면 줄바꿈을 행 구분 문자로 사용합니다.
+          빈 문자열 ""를 지정하면 연속되는 줄바꿈을 행 구분 문자로 사용합니다.(문단 모드)#@since 1.9.1
+@param limit 읽어올 문자열의 최대 바이트수를 지정합니다.
+#@end
+
+@raise IOError 自身が読み込み用にオープンされていなければ発生します。
+
+@see [[m:$/]], [[m:IO#gets]]
+
+--- each_byte {|ch| ... }    -> self
+#@since 1.8.7
+#@since 1.9.1
+--- each_byte                -> Enumerator
+#@else
+--- each_byte                -> Enumerable::Enumerator
+#@end
+#@end
+
+IO の現在位置から 1 バイトずつ読み込み、それを整数として与え、ブロックを実行します。
+
+#@since 1.8.7
+ブロックが与えられなかった場合は、自身から生成した
+#@since 1.9.1
+[[c:Enumerator]] オブジェクトを返します。#@else
+[[c:Enumerable::Enumerator]] 객체를 리턴합니다.
+#@end
+#@end
+
+#@since 1.9.1
+バイナリ読み込みメソッドとして動作します。#@end
+
+@raise IOError 自身が読み込み用にオープンされていなければ発生します。
+
+#@since 1.8.7
+--- bytes {|ch| ... }        -> self
+#@since 1.9.1
+--- bytes                    -> Enumerator
+#@else
+--- bytes                    -> Enumerable::Enumerator
+#@end
+
+이 메소드는 더 이상 사용되지 않습니다.
+代わりに [[m:IO#each_byte]] を使用してください。#@since 2.0.0
+使用すると警告メッセージが表示されます。#@end
+
+IO の現在位置から 1 バイトずつ読み込み、それを整数として与え、ブロックを実行します。
+
+ブロックが与えられなかった場合は、自身から生成した
+#@since 1.9.1
+[[c:Enumerator]] オブジェクトを返します。#@else
+[[c:Enumerable::Enumerator]] 객체를 리턴합니다.
+#@end
+
+#@since 1.9.1
+バイナリ読み込みメソッドとして動作します。#@end
+
+@raise IOError 自身が読み込み用にオープンされていなければ発生します。
+
+@see [[m:IO#each_byte]]
+#@end
+
+--- eof     -> bool
+--- eof?-> bool
+
+ストリームがファイルの終端に達した場合、true を返します。そうでない場合、false を返します。
+
+   f = File.new("testfile")
+   dummy = f.readlines
+   f.eof   #=> true
+
+自身がパイプやソケットなどのストリームであった場合、相手がデータを送るか close するまでブロックします。
+
+   r, w = IO.pipe
+   Thread.new { sleep 10; w.close }
+   r.eof?#=> 10秒ブロックしてから true を返す。
+
+   r, w = IO.pipe
+   Thread.new { sleep 10; w.puts "a" }
+   r.eof?#=> 10秒ブロックしてから false を返す。
+
+   r, w = IO.pipe
+   r.eof?# 永久にブロックします。
+
+eof, eof?は入力バッファにデータを読み込むので、[[m:IO#sysread]] と同時に使うと正常に
+動作しません。
+
+@raise IOError 自身が読み込み用にオープンされていなければ発生します。
+
+--- fcntl(cmd, arg = 0)    -> Integer
+
+IOに対してシステムコール fcntl を実行します。
+機能の詳細は [[man:fcntl(2)]] を参照してください。
+fcntl(2) が返した整数を返します。
+
+@param cmd IO に対するコマンドを、添付ライブラリ [[lib:fcntl]] が提供している定数で指定します。
+
+@param arg cmd に対する引数を整数、文字列、booleanのいずれかで指定します。           整数の時にはその値を [[man:fcntl(2)]] に渡します。           文字列の場合には Array#pack した構造体だとみなして渡します。           arg が nil か false の場合には 0を、true の場合には 1 を渡します。
+
+@raise Errno::EXXX fcntl の実行に失敗した場合に発生します。
+
+@raise IOError 既に close されている場合に発生します。
+
+#@since 1.8.0
+--- fsync    -> 0 | nil
+
+書き込み用の IO に対して、システムコール [[man:fsync(2)]]
+を実行します。[[m:IO#flush]] を行ったあと、(OSレベルで)まだディスクに
+書き込まれていないメモリ上にあるデータをディスクに書き出します。
+
+成功すれば 0 を返します。
+[[man:fsync(2)]] がサポートされていない場合は nil を返します。
+
+@raise Errno::EXXX 작업에 실패하면 발생합니다.
+
+@raise IOError 既に close されている場合に発生します。
+
+#@end
+
+--- fileno    -> Integer
+--- to_i      -> Integer
+
+ファイル記述子を表す整数を返します。
+
+@raise IOError 既に close されている場合に発生します。
+
+--- flush    -> self
+
+IO ポートの内部バッファをフラッシュします。
+
+@raise IOError 自身が書き込み用にオープンされていなければ発生します。
+
+@raise Errno::EXXX [[man:fflush(3)]] が失敗した場合に発生します。
+
+#@since 1.9.1
+--- getc    -> String | nil
+
+IO ポートから外部エンコーディングに従い 1 文字読み込んで返します。EOF에 도달하면 nil을 리턴합니다.
+
+텍스트를 읽어오는 메소드로 작동합니다.
+[[m:IO#readchar]] との違いは EOF での振る舞いのみです。
+
+@raise IOError 自身が読み込み用にオープンされていなければ発生します。
+
+예:
+
+
+@see [[m:IO#readchar]]
+#@else
+--- getc    -> Integer | nil
+
+IO ポートから 1 文字読み込んで、その文字に対応する [[c:Fixnum]] を
+返します。EOF에 도달하면 nil을 리턴합니다.
+
+[[m:IO#readchar]] との違いは EOF での振る舞いのみです。
+
+@raise IOError 自身が読み込み用にオープンされていなければ発生します。
+
+   f = File.new("testfile")
+   f.getc                   #=> 84
+   f.getc                   #=> 104
+   f.read
+   f.getc                   #=> nil
+
+@see [[m:IO#readchar]]
+#@end
+
+#@since 1.9.1
+--- gets(rs = $/)    -> String | nil
+--- gets(limit) -> String | nil
+--- gets(rs, limit) -> String | nil
+
+#@else
+--- gets(rs = $/)    -> String | nil
+#@end
+
+一行読み込んで、読み込みに成功した時にはその文字列を返します。EOF에 도달하면 nil을 리턴합니다.
+
+#@since 1.9.1
+텍스트 읽기 메소드로 작동합니다.
+#@end
+読み込んだ文字列を変数 [[m:$_]] にセットします。[[m:IO#readline]] との違いは EOF での振る舞いのみです。
+
+#@since 1.9.1
+limit で最大の読み込みバイト数を指定します。ただし
+ファイルのエンコーディングがマルチバイトエンコーディングである場合には
+読み込んだ文字列がマルチバイト文字の途中で切れないように
+数バイト余分に読み込む場合があります。#@end
+
+@param rs 행 구분 문자를 지정합니다.rs에 nil을 지정하면 줄바꿈을 행 구분 문자로 사용합니다.
+          빈 문자열 ""를 지정하면 연속되는 줄바꿈을 행 구분 문자로 사용합니다.(문단 모드)#@since 1.9.1
+@param limit 읽어올 문자열의 최대 바이트수를 지정합니다.
+#@end
+
+@raise IOError 自身が読み込み用にオープンされていなければ発生します。
+
+   f = File.new("oneline_file")
+   f.gets                          #=> "This is line one\n"
+   $_                              #=> "This is line one\n"
+   f.gets                          #=> nil
+   $_                              #=> nil
+
+@see [[m:$/]], [[m:IO#readline]]
+
+--- ioctl(cmd, arg = 0)    -> Integer
+
+IO に対してシステムコール ioctl を実行し、その結果を返します。
+機能の詳細は [[man:ioctl(2)]] を参照してください。
+
+@param cmd IO に対するコマンドを整数で指定します。どのようなコマンドが使えるかはプラットフォームに依存します。
+
+@param arg cmd に対する引数を指定します。整数の時にはその値を ioctl に渡します。           文字列の場合には [[m:Array#pack]] した構造体だとみなして渡します。           arg が nil か false の場合には 0を、true の場合には 1 を渡します。
+
+@raise IOError 既に close されている場合に発生します。
+
+--- isatty    -> bool
+--- tty?-> bool
+
+入出力ポートがttyに結合している時、真を返します。そうでない場合 false を返します。
+
+@raise IOError 既に close されている場合に発生します。
+
+--- lineno    -> Integer
+
+現在の行番号を整数で返します。実際には [[m:IO#gets]] が呼ばれた回数です。
+改行以外のセパレータで gets が呼ばれた場合など、実際の行番号と異なる場合があります。
+
+@raise IOError 読み込み用にオープンされていなければ発生します。
+
+  f = File.new("testfile")
+  f.lineno                 #=> 0
+  f.gets                   #=> "This is line one\n"
+  f.lineno                 #=> 1
+  f.gets                   #=> "This is line two\n"
+  f.lineno                 #=> 2
+
+@see [[m:$.]]
+
+--- lineno=(number)
+
+現在の行番号を number にセットします。 [[m:$.]] は次回の読み込みの時に更新されます。
+
+@param number 行番号を整数で指定します。
+
+@raise IOError 読み込み用にオープンされていなければ発生します。
+
+  f = File.new("testfile")
+  f.gets                     #=> "This is line one\n"
+  $.                         #=> 1
+  f.lineno = 1000
+  f.lineno                   #=> 1000
+  $.                         #=> 1
+  f.gets                     #=> "This is line two\n"
+  $.                         #=> 1001
+
+@see [[m:$.]]
+
+--- pid    -> Integer | nil
+
+自身が [[m:IO.popen]] で作られたIOポートなら、子プロセスのプロセス ID を
+返します。それ以外は nil を返します。
+
+@raise IOError 既に close されている場合に発生します。
+
+--- pos    -> Integer
+--- tell   -> Integer
+
+ファイルポインタの現在の位置を整数で返します。
+
+@raise IOError 既に close されている場合に発生します。
+
+--- pos=(n)
+
+ファイルポインタを指定位置に移動します。
+[[m:IO#seek]](n, IO::SEEK_SET) と同じです。
+
+@param n 맨 앞에서 계산한 위치를 정수로 지정합니다.
+
+@raise IOError 既に close されている場合に発生します。
+
+--- print(*arg)    -> nil
+
+引数を IO ポートに順に出力します。引数を省略した場合は、[[m:$_]] を出力します。
+
+@param arg [[m:Kernel.#print]] と同じです。
+
+@raise IOError 自身が書き込み用にオープンされていなければ発生します。
+
+@raise Errno::EXXX 出力に失敗した場合に発生します。
+
+--- printf(format, *arg)    -> nil
+
+C 言語の printf と同じように、format に従い引数
+を文字列に変換して、self に出力します。
+
+第一引数に IO を指定できないこと、引数を省略できないことを除けば [[m:Kernel.#printf]] と同じです。
+
+@param format [[m:Kernel.#printf]] と同じです。[[d:print_format]] を参照してください。
+
+@param arg [[m:Kernel.#printf]] と同じです。
+
+@raise IOError 自身が書き込み用にオープンされていなければ発生します。
+
+@raise Errno::EXXX 出力に失敗した場合に発生します。
+
+@see [[m:Kernel.#printf]]
+
+--- putc(ch)    -> object
+
+文字 ch を self に出力します。
+引数の扱いは [[m:Kernel.#putc]] と同じです。詳細はこちらを参照し
+てください。ch を返します。
+
+@param ch 出力したい文字を、文字列か文字コード(整数)で与えます。
+
+@raise IOError 自身が書き込み用にオープンされていなければ発生します。
+
+@raise Errno::EXXX 出力に失敗した場合に発生します。
+
+@see [[m:Kernel.#putc]]
+
+--- puts(*obj)    -> nil
+
+各 obj を self に出力し、それぞれの後に改行を出力します。
+引数の扱いは [[m:Kernel.#puts]] と同じです。詳細はこちらを参照し
+てください。
+
+@param obj 出力したいオブジェクトを指定します。[[m:Kernel.#puts]] と同じです。
+
+@raise IOError 自身が書き込み用にオープンされていなければ発生します。
+
+@raise Errno::EXXX 出力に失敗した場合に発生します。
+
+     $stdout.puts("this", "is", "a", "test", [1, [nil, 3]])
+     
+     #=>     
+     this
+     is
+     a
+     test
+     1
+     nil
+     3
+
+@see [[m:Kernel.#puts]]
+
+#@since 1.8.0
+--- read(length = nil, outbuf = "")    -> String | nil
+#@else
+--- read(length = nil)            -> String | nil
+#@end
+
+length バイト読み込んで、その文字列を返します。
+
+#@since 1.9.1
+引数 length が指定された場合はバイナリ読み込みメソッド、そうでない場合はテキスト読み込みメソッドとして
+動作します。
+#@end
+既に EOF に達していれば nil を返します。
+#@since 1.9.1
+ただし、length に nil か 0 が指定されている場合は、空文字列 "" を返します。
+#@else
+ただし、length に nil が指定されている場合は、空文字列 "" を返します。
+#@end
+例えば、open(空ファイル) {|f| f.read } は "" となります。
+
+@param length 読み込むサイズを整数で指定します。              nil が指定された場合、EOF までの全てのデータを読み込んで、その文字列を返します。
+
+#@since 1.8.0
+@param outbuf 出力用のバッファを文字列で指定します。IO#read は読み込んだ
+              データをその文字列オブジェクトに上書きして返します。指定し
+              た文字列オブジェクトがあらかじめ length 長の領域であれば、
+              余計なメモリの割当てが行われません。指定した文字列の長さが
+              length と異なる場合、その文字列は一旦 length 長に拡張(ある
+              いは縮小)されたあと、実際に読み込んだデータのサイズになります。#@end
+
+@raise IOError 自身が読み込み用にオープンされていなければ発生します。
+
+@raise Errno::EXXX データの読み込みに失敗した場合に発生します。
+
+@raise ArgumentError length が負の場合に発生します。
+
+#@since 1.8.0              
+第二引数を指定した read の呼び出しでデータが空であった場合
+(read が nil を返す場合)、outbuf は空文字列になります。
+
+  outbuf = "x" * 20;
+  io = File.open("/dev/null")
+  p io.read(10,outbuf)
+  p outbuf
+  => nil
+     ""
+#@end
+
+#@since 1.9.1
+--- readchar    -> String
+#@else
+--- readchar    -> Integer
+#@end
+
+#@since 1.9.1
+IO ポートから 1 文字読み込んで返します。
+#@else
+IO ポートから 1 文字読み込んで、その文字に対応する [[c:Fixnum]] を
+返します。
+#@end
+EOF に到達した時には EOFError が発生します。
+
+#@since 1.9.1
+텍스트 읽기 메소드로 작동합니다.
+#@end
+[[m:IO#getc]] との違いは EOF での振る舞いのみです。
+
+@raise EOFError EOF に到達した時に発生します。
+
+@raise IOError 自身が読み込み用にオープンされていなければ発生します。
+
+#@since 1.9.1
+   f = File.new("testfile")
+   p f.readchar                   #=> "い"
+   p f.readchar                   #=> "ろ"
+   p f.readchar                   #=> "は"
+   f.read
+   f.readchar                   #=> EOFError
+#@else
+   f = File.new("testfile")
+   f.readchar                   #=> 84
+   f.readchar                   #=> 104
+   f.read
+   f.readchar                   #=> EOFError
+#@end
+
+@see [[m:IO#getc]]
+
+#@until 1.9.1
+--- readline(rs = $/)    -> String
+#@else
+--- readline(rs = $/) -> String
+--- readline(limit) -> String
+--- readline(rs, limit) -> String
+#@end
+
+一行読み込んで、読み込みに成功した時にはその文字列を返します。
+EOF に到達した時には EOFError が発生します。
+
+#@since 1.9.1
+텍스트 읽기 메소드로 작동합니다.
+#@end
+読み込んだ文字列を変数 [[m:$_]] にセットします。[[m:IO#gets]] との違いは EOF での振る舞いのみです。
+
+#@since 1.9.1
+limit로 읽어올 문자열의 최대 바이트수를 지정합니다.
+ただしマルチバイト文字が途中で
+切れないように余分に読み込む場合があります。#@end
+
+@param rs 행 구분 문자를 지정합니다.rs에 nil을 지정하면 줄바꿈을 행 구분 문자로 사용합니다.빈 문자열 ""를 지정하면 연속되는 줄바꿈을 행 구분 문자로 사용합니다.(문단 모드)#@since 1.9.1
+@param limit 읽어올 문자열의 최대 바이트수를 지정합니다.
+#@end
+
+@raise EOFError EOF に到達した時に発生します。
+
+@raise IOError 自身が読み込み用にオープンされていなければ発生します。
+
+   f = File.new("oneline_file")
+   f.readline                      #=> "This is line one\n"
+   $_                              #=> "This is line one\n"
+   f.readline                      #=> EOFError
+   $_                              #=> nil
+
+@see [[m:$/]], [[m:IO#gets]]
+
+--- readlines(rs = $/)    -> [String]
+#@since 1.9.1
+--- readlines(limit)    -> [String]
+--- readlines(rs = $/, limit)    -> [String]
+#@end
+
+データを全て読み込んで、その各行を要素としてもつ配列を返します。
+既に EOF に達していれば空配列 [] を返します。
+
+#@since 1.9.1
+텍스트 읽기 메소드로 작동합니다.
+
+limit で最大読み込みバイト数を指定します。ただしマルチバイト文字が途中で
+切れないように余分に読み込む場合があります。#@end
+
+@param rs 행 구분 문자를 지정합니다.rs에 nil을 지정하면 줄바꿈을 행 구분 문자로 사용합니다.
+          빈 문자열 ""를 지정하면 연속되는 줄바꿈을 행 구분 문자로 사용합니다.(문단 모드)#@since 1.9.1
+@param limit 읽어올 문자열의 최대 바이트수를 지정합니다.
+#@end
+
+@raise IOError 自身が読み込み用にオープンされていなければ発生します。
+
+@see [[m:$/]], [[m:IO#gets]]
+
+#@since 1.8.5
+--- read_nonblock(maxlen, outbuf = "")    -> String
+
+IO をノンブロッキングモードに設定し、
+その後で [[man:read(2)]] システムコールにより
+長さ maxlen を上限として読み込み、文字列として返します。
+EAGAIN, EINTR などは [[c:Errno::EXXX]] 例外として呼出元に報告されます。
+
+#@since 1.9.2
+発生した例外 がErrno::EAGAIN、 Errno::EWOULDBLOCK である場合は、
+その例外オブジェクトに [[c:IO::WaitReadable]] が [[m:Object#extend]]
+されます。#@end
+
+なお、バッファが空でない場合は、read_nonblock はバッファから読み込みます。この場合、read(2) システムコールは呼ばれません。
+
+このメソッドはノンブロッキングモードにする点を除いて [[m:IO#readpartial]] と
+同じであることに注意してください。
+
+#@since 1.9.1
+バイナリ読み込みメソッドとして動作します。
+#@end
+既に EOF に達していれば EOFError が発生します。ただし、maxlen に 0 が指定されている場合は、空文字列 "" を返します。
+
+@param maxlen 読み込む長さの上限を整数で指定します。
+
+@param outbuf 文字列で指定します。IO#read_nonblock は読み込んだデータを outbuf に破壊的に格納し、
+              返り値は outbuf となります。outbuf は一旦 maxlen 長に拡張(あるいは縮小)されたあと、
+              実際に読み込んだデータのサイズになります。read(2) システムコールが 0 を返した場合は、空文字列になります。
+
+@raise IOError 自身が読み込み用にオープンされていなければ発生します。
+
+@raise Errno::EXXX read(2) システムコールの結果としてエラーが起きた場合に発生します。
+
+@raise EOFError read(2) システムコールが 0 を返した場合に発生します。これは、IO が既に EOF に達していることを意味します。
+
+#@end
+
+#@since 1.8.3
+--- readpartial(maxlen, outbuf = "")    -> String
+
+IO から長さ maxlen を上限として読み込み、文字列として返します。
+即座に得られるデータが存在しないときにはブロックしてデータの到着を待ちます。
+即座に得られるデータが 1byte でも存在すればブロックしません。
+
+#@since 1.9.1
+バイナリ読み込みメソッドとして動作します。
+#@end
+既に EOF に達していれば EOFError が発生します。
+ただし、maxlen に 0 が指定されている場合は、空文字列 "" を返します。
+
+readpartial はブロックを最小限に抑えることによって、
+パイプ、ソケット、端末などのストリームに対して適切に動作するよう設計されています。readpartial がブロックするのは次の全ての条件が満たされたときだけです。  * IO オブジェクト内のバッファが空
+  * ストリームにデータが到着していない
+  * ストリームが EOF になっていない
+これらの条件が満たされる場合、何らかのデータが到着するか EOF になるまで readpartial はブロックします。
+
+readpartial の結果は以下のようになります。  (1) バッファが空でなければ、そのバッファのデータを読み込んで返します。  (2) ストリームにデータがあれば、ストリームからデータを読み込んで返します。  (3) ストリームが EOF になっていれば、例外 [[c:EOFError]] を発生させます。
+
+例えば、パイプに対しては次のように動作します。
+
+  r, w = IO.pipe           #               buffer          pipe content
+  w << "abc"               #               ""              "abc".
+  r.readpartial(4096)      #=> "abc"       ""              ""
+  r.readpartial(4096)      # バッファにもパイプにもデータがないのでブロックする
+  
+  r, w = IO.pipe           #               buffer          pipe content
+  w << "abc"               #               ""              "abc"
+  w.close                  #               ""              "abc" EOF
+  r.readpartial(4096)      #=> "abc"       ""              EOF
+  r.readpartial(4096)      # 例外 EOFError 発生
+  
+  r, w = IO.pipe           #               buffer          pipe content
+  w << "abc\ndef\n"        #               ""              "abc\ndef\n"
+  r.gets                   #=> "abc\n"     "def\n"         ""
+  w << "ghi\n"             #               "def\n"         "ghi\n"
+  r.readpartial(4096)      #=> "def\n"     ""              "ghi\n"
+  r.readpartial(4096)      #=> "ghi\n"     ""              ""
+
+なお、readpartial は nonblock フラグに影響されません。
+つまり、nonblock フラグが設定されていて sysread であれば Errno::EAGAIN になる場合でもブロックします。
+
+また、readpartial の挙動は sysread によく似ています。
+とくに、バッファが空の場合には同じ挙動を示します。
+ただし、EAGAIN および EINTR エラーは内部で発生したとしても通知されず、データが到着するまでブロックし続けます。
+
+@param maxlen 読み込む長さの上限を整数で指定します。
+
+@param outbuf 文字列で指定します。IO#readpartial は読み込んだデータを outbuf に破壊的に格納し、
+              返り値は outbuf となります。outbuf は一旦 maxlen 長に拡張(あるいは縮小)されたあと、
+              実際に読み込んだデータのサイズになります。IO が既に EOF に達していれば、空文字列になります。
+
+@raise IOError 自身が読み込み用にオープンされていなければ発生します。
+
+@raise EOFError IO が既に EOF に達していれば発生します。
+
+#@end
+
+--- reopen(io)                   -> self
+
+自身を指定された io に繋ぎ換えます。
+
+クラスも io に等しくなることに注意してください。
+[[m:IO#pos]], [[m:IO#lineno]] などは指定された io と等しくなります。
+
+@param io 自身を繋ぎ換えたい IO オブジェクトを指定します。
+
+@raise IOError 指定された io が close されている場合に発生します。
+
+--- reopen(path)                 -> self
+--- reopen(path, mode)     -> self
+
+path で指定されたファイルにストリームを繋ぎ換えます。
+
+#@if (version >= "1.8.0")
+第二引数を省略したとき self のモードをそのまま引き継ぎます。
+#@end
+[[m:IO#pos]], [[m:IO#lineno]] などはリセットされます。
+
+@param path 경로명을 나타내는 문자열을 지정합니다.
+
+@param mode パスを開く際のモードを文字列で指定します。
+
+@raise Errno::EXXX 작업에 실패하면 발생합니다.
+
+@see [[m:Kernel.#open]]
+
+--- rewind    -> 0
+
+ファイルポインタを先頭に移動します。[[m:IO#lineno]] は 0 になります。
+
+@raise IOError 既に close されている場合に発生します。
+
+     f = File.new("testfile")
+     f.readline               #=> "This is line one\n"
+     f.rewind                 #=> 0
+     f.lineno                 #=> 0
+     f.readline               #=> "This is line one\n"
+
+--- seek(offset, whence = IO::SEEK_SET)    -> 0
+
+ファイルポインタを whence の位置から offset だけ移動させます。
+offset 位置への移動が成功すれば 0 を返します。
+
+@param offset 파일 포인터를 이동시킬 옵셋을 정수로 지정합니다.
+
+@param whence 値は以下のいずれかです。
+
+  * IO::SEEK_SET: ファイルの先頭から (デフォルト)
+  * IO::SEEK_CUR: 現在のファイルポインタから
+  * IO::SEEK_END: ファイルの末尾から
+
+@raise Errno::EXXX ファイルポインタの移動に失敗した場合に発生します。
+
+@raise IOError 既に close されていた場合に発生します。 
+
+     f = File.new("testfile")
+     f.seek(-13, IO::SEEK_END)   #=> 0
+     f.readline                  #=> "And so on...\n"
+
+@see [[m:IO#sysseek]]
+
+--- stat    -> File::Stat
+
+ファイルのステータスを含む [[c:File::Stat]] オブジェクトを生成して
+返します。
+
+@raise Errno::EXXX ステータスの読み込みに失敗した場合に発生します。
+
+@raise IOError 既に close されていた場合に発生します。 
+
+@see [[m:File#lstat]], [[m:File.stat]], [[m:File.lstat]] 
+
+--- sync    -> bool
+
+現在の出力が同期モードならば true を返します。그렇지 않은 경우엔 false를 리턴합니다.
+
+@raise IOError 既に close されていた場合に発生します。 
+
+--- sync=(newstate)
+
+自身を同期モードに設定すると、出力関数の呼出毎にバッファがフラッシュされます。
+
+@param newstate 自身を同期モードに設定するかを boolean で指定します。
+
+@raise IOError 既に close されていた場合に発生します。 
+
+#@since 1.8.0
+--- sysread(maxlen, outbuf = "")   -> String
+#@else
+--- sysread(maxlen)           -> String
+#@end
+
+[[man:read(2)]] を用いて入力を行ない、入力されたデータを
+含む文字列を返します。stdio を経由しないので gets や getc や eof? などと混用すると思わぬ動作
+をすることがあります。
+
+#@since 1.9.1
+バイナリ読み込みメソッドとして動作します。
+#@end
+既に EOF に達していれば EOFError が発生します。ただし、maxlen に 0 が指定されている場合は、空文字列 "" を返します。
+
+@param maxlen 入力のサイズを整数で指定します。
+
+#@since 1.8.0
+@param outbuf 出力用のバッファを文字列で指定します。IO#sysread は読み込んだデータを
+              その文字列オブジェクトに上書きして返します。指定した文字列オブジェクト
+              があらかじめ maxlen 長の領域であれば、余計なメモリの割当てが行われません。              指定した文字列の長さが maxlen と異なる場合、その文字列は一旦 maxlen 長に
+              拡張(あるいは縮小)されたあと、実際に読み込んだデータのサイズになります。#@end
+
+@raise IOError 自身が読み込み用にオープンされていなければ発生します。
+
+@raise EOFError IO が既に EOF に達していれば発生します。
+
+@raise Errno::EXXX データの読み込みに失敗した場合に発生します。
+
+#@since 1.8.0
+第二引数を指定した sysread の呼び出しでデータが空であった場
+合(sysread が例外 [[c:EOFError]] を発生させる場合)、
+outbuf は空文字列になります。
+
+  outbuf = "x" * 20;
+  io = File.open("/dev/null")
+  p((io.sysread(10,outbuf) rescue nil))
+  p outbuf
+  => nil
+     ""
+#@end
+
+#@if (version >="1.8.0")
+--- sysseek(offset, whence = IO::SEEK_SET)    -> Integer
+
+[[man:lseek(2)]] と同じです。[[m:IO#seek]] では、
+[[m:IO#sysread]], [[m:IO#syswrite]] と併用すると正しく動作しないので代わりにこのメソッドを使います。
+位置 offset への移動が成功すれば移動した位置(ファイル先頭からのオフセット)を返します。
+
+書き込み用にバッファリングされた IO に対して実行すると警告が出ます。
+
+  File.open("/dev/zero") {|f|
+    buf = f.read(3)
+    f.sysseek(0)
+  }
+  # => -:3:in `sysseek': sysseek for buffered IO (IOError)
+  
+  File.open("/dev/null", "w") {|f|
+    f.print "foo"
+    f.sysseek(0)
+  }
+  # => -:3: warning: sysseek for buffered IO
+
+@param offset 파일 포인터를 이동시킬 옵셋을 정수로 지정합니다.
+
+@param whence 値は以下のいずれかです。
+
+  * IO::SEEK_SET: ファイルの先頭から (デフォルト)
+  * IO::SEEK_CUR: 現在のファイルポインタから
+  * IO::SEEK_END: ファイルの末尾から
+
+@raise IOError 読み込み用にバッファリングされた IO に対して実行すると発生します。               既に close されていた場合にも発生します。 
+
+@raise Errno::EXXX 移動に失敗した場合に発生します。
+
+@see [[m:IO#seek]]
+
+#@end
+
+--- syswrite(string)    -> Integer    
+
+[[man:write(2)]] を用いて string を出力します。
+string が文字列でなければ to_s による文字列化を試みます。
+実際に出力できたバイト数を返します。
+
+stdio を経由しないので他の出力メソッドと混用すると思わぬ動作
+をすることがあります。
+
+@param string 自身に書き込みたい文字列を指定します。
+
+@raise IOError 自身が書き込み用にオープンされていなければ発生します。
+
+@raise Errno::EXXX 出力に失敗した場合に発生します。
+
+--- to_io    -> self
+
+self를 리턴합니다.
+
+--- ungetc(char)     -> nil
+
+指定された char を読み戻します。#@until 1.9.1
+2バイト以上の読み戻しは保証されません。#@end
+
+#@since 1.9.1
+@param char 読み戻したい1文字かそのコードポイントを指定します。#@else
+@param char 読み戻したい1バイト文字に対応する [[c:Fixnum]] を指定します。#@end
+
+@raise IOError 読み戻しに失敗した場合に発生します。また、自身が読み込み用にオープンされていない時、
+               自身がまだ一度も read されていない時に発生します。
+
+#@since 1.9.1
+#@else
+  f = File.new("testfile")   #=> #<File:testfile>
+  c = f.getc                 #=> 84
+  f.ungetc(c)                #=> nil
+  f.getc                     #=> 84
+#@end
+
+--- write(str)     -> Integer
+
+IOポートに対して str を出力します。str が文字列でなけ
+れば to_s による文字列化を試みます。
+実際に出力できたバイト数を返します。
+
+[[m:IO#syswrite]] を除く全ての出力メソッドは、最終的に
+"write" という名のメソッドを呼び出すので、このメソッドを置き換える
+ことで出力関数の挙動を変更することができます。#@##@since 1.8.0
+#@#以前は [[m:Kernel.#putc]], 
+#@#[[m:IO#putc]] に対してだけこのことは適用されませんでした
+#@#([[ruby-dev:16305]])が、修正されました([[ruby-dev:18038]])。#@##@end
+
+@param str 自身に書き込みたい文字列を指定します。
+
+@raise IOError 自身が書き込み用にオープンされていなければ発生します。
+
+@raise Errno::EXXX 出力に失敗した場合に発生します。
+
+#@if (version >= "1.8.5")
+--- write_nonblock(string)    -> Integer
+
+IO をノンブロッキングモードに設定し、string を [[man:write(2)]] システムコールで書き出します。
+
+write(2) が成功した場合、書き込んだ長さを返します。EAGAIN, EINTR などは例外 [[c:Errno::EXXX]] として呼出元に報告されます。#@since 1.8.7
+書き込んだバイト数(つまり返り値)は [[m:String#bytesize]] の
+値より小さい可能性があります。#@end
+
+#@since 1.9.2
+発生した例外 がErrno::EAGAIN、 Errno::EWOULDBLOCK である場合は、
+その例外オブジェクトに [[c:IO::WaitWritable]] が [[m:Object#extend]]
+されます。よって IO::WaitWritable を write_nonblock のリトライが必要
+かの判定に用いることができます。#@end
+
+
+@param string 自身に書き込みたい文字列を指定します。
+
+@raise IOError 自身が書き込み用にオープンされていなければ発生します。
+
+@raise Errno::EXXX [[man:write(2)]] が失敗した場合に発生します。#@end
+
+#@since 1.8.7
+#@until 1.9.2
+#@since 1.9.1
+--- lines(rs = $/)                      -> Enumerator
+--- lines(limit)                        -> Enumerator
+--- lines(rs, limit)                    -> Enumerator
+#@else
+--- lines(rs = $/)    -> Enumerable::Enumerator
+#@end
+
+이 메소드는 더 이상 사용되지 않습니다.
+代わりに [[m:IO#each_line]] を使用してください。
+
+自身を 1 行ずつイテレートするような
+#@since 1.9.1
+[[c:Enumerator]] オブジェクトを生成して返します。#@else
+[[c:Enumerable::Enumerator]] 객체를 생성해서 리턴합니다.
+#@end
+
+#@since 1.9.1
+텍스트 읽기 메소드로 작동합니다.
+
+limit で最大読み込みバイト数を指定します。ただしマルチバイト文字が途中で
+切れないように余分に読み込む場合があります。
+
+#@end
+
+@param rs 행 구분 문자를 지정합니다.rs에 nil을 지정하면 줄바꿈을 행 구분 문자로 사용합니다.
+          빈 문자열 ""를 지정하면 연속되는 줄바꿈을 행 구분 문자로 사용합니다.(문단 모드)
+
+   "foo\nbar\n".lines.to_a   #=> ["foo\n", "bar\n"]
+   "foo\nb ar".lines.sort    #=> ["b ar", "foo\n"]
+#@since 1.9.1
+@param limit 最大の読み込みバイト数
+#@end
+
+@see [[m:$/]], [[m:IO#each_line]]
+#@end
+#@since 1.9.2
+--- lines(rs = $/) {|line| ... }        -> self
+--- lines(limit) {|line| ... }          -> self
+--- lines(rs, limit) {|line| ... }      -> self
+--- lines(rs = $/)                      -> Enumerator
+--- lines(limit)                        -> Enumerator
+--- lines(rs, limit)                    -> Enumerator
+
+이 메소드는 더 이상 사용되지 않습니다.
+代わりに [[m:IO#each_line]] を使用してください。#@since 2.0.0
+使用すると警告メッセージが表示されます。#@end
+
+IO の現在位置から 1 行ずつ文字列として読み込み、それを引数として
+与えられたブロックを実行します。
+
+ブロックが与えられなかった場合は、自身から生成した
+[[c:Enumerator]] オブジェクトを返します。
+
+텍스트를 읽어오는 메소드로 작동합니다.
+
+limit で最大読み込みバイト数を指定します。ただしマルチバイト文字が途中で
+切れないように余分に読み込む場合があります。
+
+
+@param rs 행 구분 문자를 지정합니다.rs에 nil을 지정하면 줄바꿈을 행 구분 문자로 사용합니다.
+          빈 문자열 ""를 지정하면 연속되는 줄바꿈을 행 구분 문자로 사용합니다.(문단 모드)@param limit 最大の読み込みバイト数
+
+@raise IOError 自身が読み込み用にオープンされていなければ発生します。
+
+@see [[m:$/]], [[m:IO#each_line]]
+#@end
+
+--- getbyte   -> Integer | nil
+
+IO から1バイトを読み込み整数として返します。EOF에 도달하면 nil을 리턴합니다.
+
+   f = File.new("testfile")
+   f.getbyte   #=> 84
+   f.getbyte   #=> 104
+
+--- readbyte   -> Integer
+
+IO から1バイトを読み込み整数として返します。EOF에 도달하면 nil을 리턴합니다.
+
+@raise EOFError EOF에 도달하면 발생합니다.
+
+--- each_char{|c| ... }     -> self
+#@since 1.9.1
+--- each_char               -> Enumerator
+#@else
+--- each_char               -> Enumerable::Enumerator
+#@end
+
+self に含まれる文字を一文字つつブロックに渡して評価します。
+
+self は読み込み用にオープンされていなければなりません。
+
+#@until 1.9.1
+멀티 바이트 문자열을 사용하려면 [[m:$KCODE]]을 올바르게 설정해야합니다.
+#@end
+
+#@until 1.9.1
+ブロックを省略した場合は各文字について繰り返す [[c:Enumerable::Enumerator]] 
+を返します。#@else
+ブロックを省略した場合は各文字について繰り返す [[c:Enumerator]] を返します。#@end
+
+@raise IOError self が読み込み用にオープンされていない場合に発生します。
+
+  f = File.new("testfile")
+  f.each_char {|c| print c, ' ' }   #=> #<File:testfile>
+
+--- chars{|c| ... }         -> self
+#@since 1.9.1
+--- chars                   -> Enumerator
+#@else
+--- chars                   -> Enumerable::Enumerator
+#@end
+
+이 메소드는 더 이상 사용되지 않습니다.
+代わりに [[m:IO#each_char]] を使用してください。#@since 2.0.0
+使用すると警告メッセージが表示されます。#@end
+
+self に含まれる文字を一文字つつブロックに渡して評価します。
+
+self は読み込み用にオープンされていなければなりません。
+
+#@until 1.9.1
+멀티 바이트 문자열을 사용하려면 [[m:$KCODE]]을 올바르게 설정해야합니다.
+#@end
+
+#@until 1.9.1
+ブロックを省略した場合は各文字について繰り返す [[c:Enumerable::Enumerator]] 
+を返します。#@else
+ブロックを省略した場合は各文字について繰り返す [[c:Enumerator]] を返します。#@end
+
+@raise IOError self が読み込み用にオープンされていない場合に発生します。
+
+@see [[m:IO#each_char]]
+#@end
+
+#@since 1.9.1
+--- ungetbyte(c) -> nil
+
+指定したバイト列を書き戻します。
+
+2バイト以上の書き戻しは仕様として保証しません。
+
+このメソッドはバッファを経由しない読み出し([[m:IO#sysread]] など)
+には影響しません。
+
+@param c バイト列(文字列)、もしくは0から255までの整数
+
+예:
+
+   f = File.new("testfile")   #=> #<File:testfile>
+   b = f.getbyte              #=> 0x38
+   f.ungetbyte(b)             #=> nil
+   f.getbyte                  #=> 0x38
+
+#@end
+#@since 1.9.1
+--- binmode?-> bool
+
+自身がバイナリモードなら true を返します。そうでない場合、false を返します。
+
+--- close_on_exec=(bool)
+自身に close-on-exec フラグを設定します。
+
+このフラグをセットすると [[man:exec(2)]] 時にそのファイルデスクリプタを
+close します。
+
+@see [[man:fcntl(2)]]
+@param bool 自身の close-on-exec フラグを true か false で指定します。
+
+   f = open("/dev/null")
+   f.close_on_exec = true
+   system("cat", "/proc/self/fd/#{f.fileno}") # cat: /proc/self/fd/3: No such file or directory
+   f.closed?#=> false
+
+@see [[m:IO#close_on_exec?]]
+
+--- close_on_exec?-> bool
+自身に close-on-exec フラグが設定されていた場合 true を返します。그렇지 않으면 false를 리턴합니다.
+
+   f = open("/dev/null")
+   f.close_on_exec?#=> false
+   f.close_on_exec = true
+   f.close_on_exec?#=> true
+   f.close_on_exec = false
+   f.close_on_exec?#=> false
+
+@see [[m:IO#close_on_exec=]]
+
+--- external_encoding   -> Encoding | nil
+
+IO の外部エンコーディングを返します。
+外部エンコーディングが指定されていない場合は nil を返します。
+ただし読み込み専用モードの場合は [[m:Encoding.default_external]] になります。
+
+--- internal_encoding   -> Encoding | nil
+
+IO の内部エンコーディングを返します。
+内部エンコーディングが指定されていない場合は nil を返します。
+
+--- set_encoding(enc_str, opt={})           -> self
+--- set_encoding(ext_enc)           -> self
+--- set_encoding(ext_enc, int_enc, opt={})  -> self
+
+IO のエンコーディングを設定します。
+
+引数が "A:B" のようにコロンで区切られた文字列の場合は、
+A を外部エンコーディング、 B を内部エンコーディングに指定します。
+
+引数が一つで、上のような形式でない場合には、
+それが外部エンコーディングと見なされます。
+
+引数が2つの場合はそのそれぞれを外部エンコーディング、内部エンコーディング
+に設定します。
+
+opt のハッシュで外部エンコーディングを内部エンコーディングに変換する際の
+オプションを指定します。
+詳しくは [[m:String#encode]] を参照してください。
+
+@param enc_str エンコーディングを表す文字列を指定します。"A:B" のようにコロンで区切られた
+               文字列を指定した場合 A が外部エンコーディング、B が内部エンコーディングを
+               表します。
+
+@param ext_enc 外部エンコーディングを表す文字列か [[c:Encoding]] オブジェクトを指定します。
+
+@param int_enc 内部エンコーディングを表す文字列か [[c:Encoding]] オブジェクトを指定します。@param opt エンコーディング変換のオプション
+例:
+    io = File.open(file)
+    io.set_encoding("ASCII-8BIT", "EUC-JP")
+
+#@end
+#@since 1.9.2
+--- autoclose=(bool)
+
+auto-close フラグを設定します。
+
+フラグが設定されているオブジェクトは
+close時/GCでのファイナライザ呼出時にファイルデスクリプタを close します。
+設定されていない場合は close しません。
+
+@param bool 真偽値でフラグを設定します
+@see [[m:IO#autoclose?]]
+
+   f = open("/dev/null")
+   IO.for_fd(f.fileno)
+   # ...
+   f.gets # may cause IOError
+
+   f = open("/dev/null")
+   IO.for_fd(f.fileno).autoclose = true
+   # ...
+   f.gets # won't cause IOError
+--- autoclose?-> bool
+
+auto-close フラグを返します。
+
+@see [[m:IO#autoclose=]]
+
+--- each_codepoint{|c| ... }     -> self
+--- each_codepoint               -> Enumerator
+
+IO の各コードポイントに対して繰り返しブロックを呼びだします。
+
+블록 인수는 코드 포인트를 나타내는 정수입니다.
+
+블록이 생략되면 [[c:Enumerator]] 객체를 리턴합니다.
+
+--- codepoints{|c| ... }         -> self
+--- codepoints                   -> Enumerator
+
+이 메소드는 더 이상 사용되지 않습니다.
+代わりに [[m:IO#each_codepoint]] を使用してください。#@since 2.0.0
+使用すると警告メッセージが表示されます。#@end
+
+IO の各コードポイントに対して繰り返しブロックを呼びだします。
+
+블록 인수는 코드 포인트를 나타내는 정수입니다.
+
+블록이 생략되면 [[c:Enumerator]] 객체를 리턴합니다.
+
+@see [[m:IO#each_codepoint]]
+
+--- fdatasync -> 0 | nil
+
+IO のすべてのバッファされているデータを直ちにディスクに書き込みます。
+
+[[man:fdatasync(2)]] をサポートしていない OS 上では代わりに
+[[m:IO#fsync]] を呼びだします。
+
+[[m:IO#fsync]] との違いは [[man:fdatasync(2)]] を参照してください。
+
+@raise NotImplementedError [[man:fdatasync(2)]] も [[man:fsync(2)]] も
+       サポートされていない OS で発生します。#@end
+
+#@since 1.9.3
+--- advise(advice, offset=0, len=0) -> nil
+
+[[man:posix_fadvise(2)]] を呼びだし、
+ファイルへのアクセスパターンをOSに知らせます。
+
+advice には以下のいずれかのシンボルを指定します。  * :normal - デフォルト
+  * :sequential - データは前から順にアクセスされる
+  * :random - データはランダムアクセスされる
+  * :willneed - データはこの直後にアクセスされる
+  * :dontneed - データは直後にはアクセスしない
+  * :noreuse - データは一度しかアクセスされない
+これらの advice が具体的に何をするのかはプラットフォーム依存です。
+
+ここでいう「データ」は offset と len で特定することができます。
+len が 0 ならば、offset からファイル末尾までを指定したことになります。
+デフォルトでは offset と len がともに 0 なので、
+ファイル全体を指定したことになります。
+
+posix_fadvise をサポートしていないプラットフォーム上では
+何もしません。
+
+@param advice アクセスパターンを表すシンボル
+@param offset パターンを指定するデータの先頭位置
+@param len パターンを指定するデータの長さ
+
+@raise IOError ストリームが既に閉じられているときに発生する例外
+@raise Errno::EBADF ファイルデスクリプタが不正であるときに発生する例外
+@raise Errno::EINVAL advice が不正
+@raise Errno::ESPIPE ファイルデスクリプタが FIFO か pipe を指している
+       場合に発生する例外(Linux はこの場合には Errno::EINVAL を発生する)
+@raise RangeError offset,lenが有効範囲から出ている場合に発生する例外
+
+#@end
+
+#@#== Constants
+
+--- SEEK_CUR -> Fixnum
+
+[[m:IO#seek]] を参照してください。
+
+--- SEEK_END -> Fixnum
+
+[[m:IO#seek]] を参照してください。
+
+--- SEEK_SET -> Fixnum
+
+[[m:IO#seek]] を参照してください。

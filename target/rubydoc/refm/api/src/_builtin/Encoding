@@ -1,0 +1,1292 @@
+#@since 1.9.1
+=class Encoding
+문자 인코딩 클래스입니다.Ruby의 다중언어 대응(M17N)에 이용됩니다.
+
+예를 들어 문자열 객체는 문자열의 바이트 표현을 비롯해 바이트 표현에 사용된 인코딩 정보도 같이 포함하고 있습니다.이 정보는 [[m:String#encoding]] 메소드로 확인할 수 있습니다. 이 외에도 [[m:IO#internal_encoding]], [[m:IO#external_encoding]] 메소드가 Encoding 객체를 리턴합니다.
+
+@see [[d:spec/m17n]]
+
+
+== Class Methods
+
+--- aliases    -> Hash
+인코딩의 축약된 이름 대응하는 원래 이름을 해쉬로 리턴합니다.
+
+예:
+  p Encoding.aliases
+  #=> {"BINARY"=>"ASCII-8BIT", "ASCII"=>"US-ASCII", "ANSI_X3.4-1986"=>"US-ASCII",
+      "SJIS"=>"Shift_JIS", "eucJP"=>"EUC-JP", "CP932"=>"Windows-31J"}
+
+--- compatible?(obj1, obj2) -> Encoding | nil
+두 객체의 인코딩이 호환되는지 검사합니다.
+호환성이 있으면 그 인코딩을 리턴하고,
+그렇지 않으면 nil을 리턴합니다.
+
+두 인수가 모두 문자열이고 호환이 되면
+두 문자열을 연결할 수 있습니다.이 때 리턴값은
+연결된 문자열이 가질 인코딩 객체입니다.
+
+  Encoding.compatible?("\xa1".force_encoding("iso-8859-1"), "b")
+  #=> #<Encoding:ISO-8859-1>
+  
+  Encoding.compatible?(
+    "\xa1".force_encoding("iso-8859-1"),
+    "\xa1\xa1".force_encoding("euc-jp"))
+  #=> nil
+
+인수가 문자열이 아닌 경우에도 두 객체가 encoding을  가지고 있으면
+호환성을 검사할 수 있습니다.
+  Encoding.compatible?(Encoding::UTF_8, Encoding::CP932)
+  # => nil
+  Encoding.compatible?(Encoding::UTF_8, Encoding::US_ASCII)
+  # => #<Encoding:UTF-8>
+@param obj1 인코딩이 호환되는지 검사하려는 첫번째 객체
+@param obj2 인코딩이 호환되는지 검사하려는 두번째 객체
+
+--- find(name) -> Encoding
+name에 지정된 이름을 가진 Encoding 객체를 리턴합니다.
+
+@param name 인코딩의 이름을 나타내는 [[c:String]]이나 [[c:Symbol]] 객체를 지정합니다.
+@return Encoding 객체를 리턴합니다.
+@raise ArgumentError name이라는 이름을 가진 인코딩이 없으면 발생합니다.
+
+#@sinco 1.9.2
+특별한 의미를 가지는 인코딩 이름들은 다음과 같은 것들이 있습니다. 로컬 인코딩을 나타내는 locale, default_external을 나타내는 external, default_internal을 나타내는 internal, 파일 시스템 인코딩을 나타내는 filesystem이 있습니다.
+#@else
+특별한 의미를 가지는 인코딩 이름들은 다음과 같은 것들이 있습니다. 로컬 인코딩을 나타내는 locale, default_external을 나타내는 external, default_internal을 나타내는 internal, 파일 시스템 인코딩을 나타내는 filesystem이 있습니다.
+#@end
+
+예:
+ p Encoding.find(:Shift_JIS)    #=> #<Encoding:Shift_JIS>
+ p Encoding.find("utf-8")       #=> #<Encoding:UTF-8>
+
+
+--- list -> [Encoding]
+현재 사용할 수 있는 인코딩의 리스트를 리턴합니다.
+
+예:
+    Encoding.list
+    => [#<Encoding:ASCII-8BIT>, #<Encoding:EUC-JP>,
+        #<Encoding:Shift_JIS>, #<Encoding:UTF-8>,
+        #<Encoding:ISO-2022-JP (dummy)>]
+    
+    Encoding.find("US-ASCII")
+    => #<Encoding:US-ASCII>
+    
+    Encoding.list
+    => [#<Encoding:ASCII-8BIT>, #<Encoding:EUC-JP>,
+        #<Encoding:Shift_JIS>, #<Encoding:UTF-8>,
+        #<Encoding:US-ASCII>, #<Encoding:ISO-2022-JP (dummy)>]
+
+--- name_list    -> [String]
+현재 사용할 수 있는 인코딩의 이름을 문자열 배열로 리턴합니다.
+
+예:
+  p Encoding.name_list
+  #=> ["US-ASCII", "ASCII-8BIT", "UTF-8",
+       "ISO-8859-1", "Shift_JIS", "EUC-JP",
+       "Windows-31J",
+       "BINARY", "CP932", "eucJP", ...]
+
+--- default_external -> Encoding
+지정되어있는 외부 인코딩을 리턴합니다.
+
+입출력이 이루어 질 때 외부 인코딩이 지정되어있지 않은 경우에 인코딩값으로 사용됩니다.Ruby에선 로컬 환경에 따르거나 -E 옵션으로 default_external을 지정할 수 있습니다.로컬 환경의 확인 및 설정 방법에 대해선 각 시스템 매뉴얼을 참조하시기 바랍니다.
+
+default_external은 무조건 설정됩니다.[[m:Encoding.locale_charmap]]가 nil을 리턴하는 경우엔 US-ASCII로, 
+로컬 환경에서 Ruby에서 지원하지 않는 인코딩을 사용중이라면 ASCII-8BIT
+가 default_external로 설정됩니다.
+
+@see [[man:locale(1)]], [[m:Encoding.locale_charmap]]
+
+--- default_external=(encoding)
+외부 인코딩을 지정합니다.
+
+--- default_internal -> Encoding | nil
+내부 인코딩을 리턴합니다.
+
+--- default_internal=(encoding)
+내부 인코딩을 지정합니다.
+
+--- locale_charmap -> String | nil
+로컬 환경의 인코딩을 정하기 위해 사용하는 locale charmap 이름을 리턴합니다.nl_langinfo이 없는 환경에서는 nil을 리턴합니다. miniruby에선 ASCII_8BIT를 리턴합니다.
+
+  Debian GNU/Linux
+    LANG=C
+      Encoding.locale_charmap  => "ANSI_X3.4-1968" 
+  LANG=ja_JP.EUC-JP
+      Encoding.locale_charmap  => "EUC-JP"
+
+  SunOS 5
+    LANG=C
+      Encoding.locale_charmap  => "646"
+    LANG=ja
+      Encoding.locale_charmap  => "eucJP"
+
+@see [[man:charmap(5)]]
+
+
+== Instance Methods
+
+--- inspect -> String
+인코딩 객체를 이해하기 쉽도록 문자열로 변환해서 리턴합니다.
+
+예:
+    Encoding::UTF_8.inspect       #=> "#<Encoding:UTF-8>"
+    Encoding::ISO_2022_JP.inspect #=> "#<Encoding:ISO-2022-JP (dummy)>"
+
+--- name -> String
+--- to_s -> String
+인코딩의 이름을 리턴합니다.
+
+    Encoding::UTF_8.name       => "UTF-8"
+
+--- names -> String
+인코딩의 이름과 별칭의 배열을 리턴합니다.
+
+    Encoding::UTF_8.names      => ["UTF-8", "CP65001"]
+
+--- dummy?-> bool
+가짜 인코딩이면 true를 리턴합니다.
+그렇지 않으면 false를 리턴합니다.
+
+가짜 인코딩이란 Ruby 상에서 이름은 사용할 수 있지만 실제로는 문자열 처리가 구현되어 있지 않은 인코딩을 말합니다.예를 들어 가짜 인코딩으로 인코딩된 문자열의 [[m:String#length]] 메소드는 멀티 바이트 문자를 고려하지 않고 바이트 길이를 리턴합니다.
+
+가짜 인코딩도 [[c:IO]]의 외부 인코디을 지정할 수 있습니다.또한 Ruby가 지원하지 않지만 확장 라이브러리에서 지원되는 인코딩을 다룰 때도 사용됩니다.
+
+예:
+  Encoding::ISO_2022_JP.dummy?#=> true
+  Encoding::UTF_8.dummy?#=> false
+
+#@since 1.9.2
+--- ascii_compatible?-> bool
+
+self가 ASCII와 호환되는 인코딩이면 true를 리턴합니다.
+그렇지 않으면 false를 리턴합니다.
+
+
+예:
+  Encoding::UTF_8.ascii_compatible?#=> true
+  Encoding::UTF_16BE.ascii_compatible?#=> false
+
+--- replicate(name) -> Encoding
+
+리시버의 인코딩을 복제합니다.
+복제된 인코딩은 원래의 인코딩과 같은 바이트 구조를 가져야만 합니다.
+name이라는 이름을 가진 인코딩이 이미 존재하면 [[c:ArgumentError]]가 발생합니다. 
+
+#@end
+== Constants
+
+--- ASCII_8BIT -> Encoding
+--- BINARY -> Encoding
+ASCII-8BIT、ASCII互換オクテット列用のエンコーディングです。
+
+もっぱら文字エンコーディングを持たないデータ、文字を符号化したのではない単なるバイトの列を表現するために用いますが、このエンコーディングは ASCII 互換であることがポイントです。
+
+--- EUC_JP -> Encoding
+--- EucJP -> Encoding
+--- EUCJP -> Encoding
+IANA Character Sets にある EUC-JP のことです。
+
+日本語 EUC 亜種で、G0 が US-ASCII、G1 が JIS X 0201 片仮名図形文字集合、G2 が JIS X 0208、G3 が JIS X 0212 となっています。
+EUC-JP を指定する場合は、それが実際には CP51932 のことである可能性を考えなければなりません。
+
+--- ISO_2022_JP -> Encoding
+--- ISO2022_JP -> Encoding
+ISO 2022-JP エンコーディングです。
+
+@see [[url:http://tools.ietf.org/html/rfc1468]]
+
+--- Shift_JIS -> Encoding
+--- SHIFT_JIS -> Encoding
+#@until 1.9.3
+--- SJIS -> Encoding
+#@end
+IANA Character Sets にある Shift_JIS のことです。
+
+基本的にはJIS X 0208:1997の付属書1にある「シフト符号化表現」のことですが、
+Ruby M17N では 7bit 部分が US-ASCII になっています。
+
+--- US_ASCII -> Encoding
+--- ASCII -> Encoding
+--- ANSI_X3_4_1968 -> Encoding
+US-ASCII、いわゆる ASCII のことで、ISO 646 IRV と一致します。
+
+7bit の範囲のみを含み、8bit 目の立っている文字 (たとえば \x80 など) が含まれる場合は正しいエンコーディングであるとみなしません。
+
+#@since 1.9.3
+--- UTF_16 -> Encoding
+BOM을 포함한 UTF-16
+
+가짜 인코딩입니다.
+
+--- UTF_32 -> Encoding
+BOM을 포함한 UTF-32
+
+가짜 인코딩입니다.
+#@end
+
+--- UTF_16BE -> Encoding
+--- UCS_2BE -> Encoding
+UTF-16BE (빅 엔디안)입니다.
+
+BOM을 포함하지 않습니다.
+
+--- UTF_16LE -> Encoding
+UTF-16LE(리틀 엔디안)입니다.
+
+BOM을 포함하지 않습니다.
+
+--- UTF_32BE -> Encoding
+--- UCS_4BE -> Encoding
+UTF-32BE(빅 엔디안)입니다.
+
+BOM을 포함하지 않습니다.
+
+--- UTF_32LE -> Encoding
+--- UCS_4LE -> Encoding
+UTF-32LE(리튼 엔디안)입니다.
+
+BOM을 포함하지 않습니다.
+
+--- UTF_8 -> Encoding
+--- CP65001 -> Encoding
+UTF-8、Unicode, ISO 10646 인코딩을 ASCII와 호환되도록 인코딩하는 방식입니다.
+
+BOM을 포함하지 않습니다.
+
+@see [[url:http://tools.ietf.org/html/rfc3629]]
+
+
+--- UTF8_MAC -> Encoding
+--- UTF_8_MAC -> Encoding
+#@since 1.9.2
+--- UTF_8_HFS -> Encoding
+#@end
+UTF8-MAC、アップルによって修正された Normalization Form D（分解済み）という形式のUTF-8です。
+
+@see [[url:http://developer.apple.com/jp/technotes/tn1150.html]],
+     [[url:http://developer.apple.com/jp/technotes/tn2078.html]]
+
+--- UTF_7 -> Encoding
+--- CP65000 -> Encoding
+
+UTF-7입니다.
+
+Unicode 인코딩의 하나로 7비트 범위에서 표현됩니다.
+가짜 인코딩입니다.
+
+
+--- Big5 -> Encoding
+--- BIG5 -> Encoding
+
+Big5 인코딩입니다.
+
+대만에서 사용되는 번체자 중국어 인코딩입니다.
+
+@see [[url:http://en.wikipedia.org/wiki/Big5]]
+
+--- CP950 -> Encoding
+
+CP950 인코딩입니다.
+
+Windows에서 사용되는 Big5의 변종 인코딩입니다.
+
+@see [[url:http://msdn.microsoft.com/en-us/goglobal/cc305155.aspx]]
+
+#@since 1.9.2
+--- Big5_HKSCS -> Encoding
+--- BIG5_HKSCS -> Encoding
+#@since 1.9.3
+--- BIG5_HKSCS_2008 -> Encoding
+--- Big5_HKSCS_2008 -> Encoding
+#@end
+
+Big5-HKSCS 인코딩입니다.
+
+홍콩에서 사용되는 Big5의 변종입니다.
+
+@see [[url:http://www.iana.org/assignments/charset-reg/Big5-HKSCS]],
+     [[url:http://www.ogcio.gov.hk/ccli/eng/hkscs/mapping_table_2008.html]]
+
+
+--- CP951 -> Encoding
+CP951 인코딩입니다.
+
+Windows 에서 사용되는 Big5-HKSCS의 변종입니다.
+
+@see [[url:http://www.microsoft.com/hk/hkscs/default.aspx]],
+     [[url:http://www.microsoft.com/downloads/en/details.aspx?FamilyID=0e6f5ac8-7baa-4571-b8e8-78b3b776afd7&DisplayLang=en]],
+     [[url:http://blogs.msdn.com/b/shawnste/archive/2007/03/12/cp-951-hkscs.aspx]]
+
+
+--- BIG5_UAO -> Encoding
+--- Big5_UAO -> Encoding
+Big5_UAO 인코딩입니다.
+
+비공식적으로 Big5을 확장한 변종 인코딩입니다.
+
+Unicode 대용표를 참조해주세요.
+[[url:http://moztw.org/docs/big5/table/big5_2003-b2u.txt]]#@end
+
+
+--- CP51932 -> Encoding
+Windows에서 사용되는 일본어 EUC 변종 인코딩입니다.
+
+G0 が US-ASCII、G1 が JIS X 0201 片仮名図形文字集合、G2 が JIS X 0208 + Windows の機種依存文字となっており、G3 は未割り当てになっています。
+
+@see [[url:http://legacy-encoding.sourceforge.jp/wiki/index.php?cp51932]]
+
+#@since 1.9.2
+--- CP50220 -> Encoding
+CP50220 인코딩입니다.
+Windows에서 사용되는 ISO-2022-JP의 변종 인코딩입니다.
+
+CP50221와 거의 같은 인코딩입니다만
+다른 인코딩으로 변환시 사용되는 테이블이 약간 다릅니다.
+
+@see [[url:http://legacy-encoding.sourceforge.jp/wiki/index.php?cp50220]]
+
+
+--- CP50221 -> Encoding
+Windows에서 사용되는 ISO-2022-JP의 변종 인코딩입니다.
+
+ISO-2022-JP に加え、ESC ( I でいわゆる半角カナを許し、Windows の機種依存文字を扱うことができます。
+
+@see [[url:http://legacy-encoding.sourceforge.jp/wiki/index.php?cp50221]]
+#@end
+
+
+--- EUC_CN -> Encoding
+--- EUCCN -> Encoding
+--- EucCN -> Encoding
+ENC-CN 인코딩입니다.
+
+중국에서 사용되는 간체자 중국어 EUC 인코딩입니다.
+GB2312라고도 불립니다.
+
+--- EUC_KR -> Encoding
+--- EUCKR -> Encoding
+--- EucKR -> Encoding
+
+EUC-KR 인코딩입니다.
+
+한국어 EUC 인코딩입니다.
+
+--- EUC_TW -> Encoding
+--- EUCTW -> Encoding
+--- EucTW -> Encoding
+
+EUC-TW 인코딩입니다.
+
+대만에서 사용되는 번체자 중국어 EUC 인코딩입니다.
+
+--- GB18030 -> Encoding
+GBK 인코딩
+
+중국에서 사용되는 중국어 인코딩입니다.
+
+@see [[url:http://www.iana.org/assignments/charset-reg/GB18030]]
+
+--- GB1988 -> Encoding
+
+GB1988 인코딩
+
+ISO/IEC 646의 중국판입니다.
+
+--- GBK -> Encoding
+--- CP936 -> Encoding
+
+GBK 인코딩
+
+중국에서 사용되는 간체자 중국어 인코딩입니다.
+
+@see [[url:http://www.iana.org/assignments/character-sets]],
+     [[url:http://www.iana.org/assignments/charset-reg/GBK]],
+     [[url:http://www.microsoft.com/globaldev/reference/dbcs/936.mspx]]
+
+
+#@# --- WINDOWS_936
+#@# --- Windows_936
+
+--- GB12345 -> Encoding
+
+GB 12345 인코딩입니다.
+
+GB 2312에서 파생된 번체자 중국어를 다루는 인코딩입니다.
+
+
+--- IBM437 -> Encoding
+--- CP437 -> Encoding
+
+CP437 인코딩
+
+@see [[url:http://en.wikipedia.org/wiki/Code_page_437]],
+     [[m:Encoding::CP869]]
+
+
+--- IBM737 -> Encoding
+--- CP737 -> Encoding
+
+CP437 인코딩
+
+그리스어를 다루는 8bit single-byte 인코딩입니다.
+
+@see [[url:http://en.wikipedia.org/wiki/Code_page_737]]
+
+
+--- IBM775 -> Encoding
+--- CP775 -> Encoding
+CP775 인코딩입니다.
+
+발트어파 언어를 다루기 위한 8bit single-byte 인코딩입니다.
+
+@see [[url:http://en.wikipedia.org/wiki/Code_page_775]]
+
+--- CP850 -> Encoding
+--- IBM850 -> Encoding
+
+CP850 인코딩입니다.
+
+@see [[url:http://en.wikipedia.org/wiki/Code_page_850]]
+
+--- IBM852 -> Encoding
+--- CP852 -> Encoding
+
+CP852 인코딩입니다.
+
+라틴 알파벳을 사용하는 중유럽 언어들을 위한 8bit single-byte 인코딩입니다. 
+
+@see [[url:http://en.wikipedia.org/wiki/Code_page_852]]
+
+--- IBM855 -> Encoding
+--- CP855 -> Encoding
+
+CP855 인코딩입니다.
+
+키릴 문자를 사용하는 언어를 위한
+8bit single-byte 인코딩입니다.
+
+@see [[url:http://en.wikipedia.org/wiki/Code_page_855]]
+
+--- IBM857 -> Encoding
+--- CP857 -> Encoding
+
+CP857 인코딩입니다.
+
+터키어를 나타내기 위한
+8bit single-byte 인코딩입니다.
+
+@see [[url:http://en.wikipedia.org/wiki/Code_page_857]]
+
+--- IBM860 -> Encoding
+--- CP860 -> Encoding
+
+CP860 인코딩입니다.
+
+포르투갈어를 나타내기 위한
+8bit single-byte 인코딩입니다.
+
+@see [[url:http://en.wikipedia.org/wiki/Code_page_860]]
+
+
+--- IBM861 -> Encoding
+--- CP861 -> Encoding
+CP861 인코딩입니다.
+
+아이슬란어를 나타내기 우히나
+8bit single-byte 인코딩입니다.
+
+@see [[url:http://en.wikipedia.org/wiki/Code_page_861]]
+
+
+--- IBM862 -> Encoding
+--- CP862 -> Encoding
+CP862 인코딩
+
+히브리어를 나타내기 위한
+8bit single-byte 인코딩입니다.
+
+@see [[url:http://en.wikipedia.org/wiki/Code_page_861]]
+
+--- IBM863 -> Encoding
+--- CP863 -> Encoding
+CP863 인코딩입니다.
+
+프랑스어를 나타내기 위한
+8bit single-byte 인코딩입니다.
+
+@see [[url:http://en.wikipedia.org/wiki/Code_page_863]]
+
+--- IBM864 -> Encoding
+--- CP864 -> Encoding
+CP864 인코딩입니다.
+
+아랍어를 나타내기 위한
+8bit single-byte 인코딩입니다.
+
+@see [[url:http://en.wikipedia.org/wiki/Code_page_864]]
+
+
+--- IBM865 -> Encoding
+--- CP865 -> Encoding
+CP865 인코딩입니다.
+
+북유럽의 언어들을 나타내기 위한
+8bit single-byte 인코딩입니다.
+
+@see [[url:http://en.wikipedia.org/wiki/Code_page_865]]
+
+--- IBM866 -> Encoding
+--- CP866 -> Encoding
+CP866 인코딩입니다.
+
+키를 문자를 사용하는 언어들을 위한
+8bit single-byte 인코딩이빈다.
+
+@see [[url:http://en.wikipedia.org/wiki/Code_page_866]]
+
+--- IBM869 -> Encoding
+--- CP869 -> Encoding
+
+CP869 인코딩입니다.
+
+그리스어를 다루는 8bit single-byte 인코딩입니다.
+
+@see [[url:http://en.wikipedia.org/wiki/Code_page_869]],
+     [[m:Encoding::CP737]]
+
+--- CP949 -> Encoding
+
+CP949 인코딩
+
+한국어를 다루기 위한 EUC-KR와 비슷한 multi-byte 인코딩입니다.
+
+@see [[m:Encoding::EUC_KR]],
+     [[url:http://www.microsoft.com/globaldev/reference/dbcs/949.mspx]],
+     [[url:http://en.wikipedia.org/wiki/EUC-KR#EUC-KR]],
+
+--- ISO_2022_JP_2 -> Encoding
+--- ISO2022_JP2 -> Encoding
+
+ISO-2022-JP-2 인코딩입니다.
+
+ISO-2022-JP의 확장 인코딩입니다.
+
+@see [[m:Encoding::ISO_2022_JP]]
+
+--- ISO_8859_1 -> Encoding
+--- ISO8859_1 -> Encoding
+
+ISO-8859-1 인코딩입니다.
+
+유럽 언어들을 비롯한 라틴 문자로 표현되는 언어들을 나타내기 위한
+8bit 인코딩입니다.
+
+Latin-1으로도 불립니다.
+
+
+
+--- ISO_8859_2 -> Encoding
+--- ISO8859_2 -> Encoding
+
+ISO8859-2 인코딩입니다.
+
+중유럽과 동유럽의 언어를 나타내는 8bit single-byte 인코딩입니다.
+
+
+
+--- ISO_8859_3 -> Encoding
+--- ISO8859_3 -> Encoding
+ISO8859-3 인코딩입니다.
+
+터키어, 몰타어, 에스페란토를 나타내는 8bit single-byte 인코딩입니다.
+
+
+
+--- ISO_8859_4 -> Encoding
+--- ISO8859_4 -> Encoding
+
+ISO 8859-4 인코딩입니다.
+
+북유럽의 언어를 나타내는 8bit single-byte 인코딩입니다.
+
+
+
+--- ISO_8859_5 -> Encoding
+--- ISO8859_5 -> Encoding
+
+ISO 8859-5 인코딩입니다.
+
+키릴 문자를 나타내기 위한 8bit single-byte 인코딩입니다.
+
+
+
+--- ISO_8859_6 -> Encoding
+--- ISO8859_6 -> Encoding
+
+ISO8859-6 인코딩입니다.
+
+아랍 문자를 나타내기 위한 8bit single-byte 인코딩입니다.
+
+@see [[m:Encoding::Windows_1256]]
+
+
+
+--- ISO_8859_7 -> Encoding
+--- ISO8859_7 -> Encoding
+
+ISO8859-7 인코딩입니다.
+
+그리스어를 나타내기 위한 8bit single-byte 인코딩입니다.
+
+@see [[m:Encoding::Windows_1253]]
+
+
+
+--- ISO_8859_8 -> Encoding
+--- ISO8859_8 -> Encoding
+ISO8859-8 인코딩입니다.
+
+히브리어를 나타내기 위한 8ibt single-byte 인코딩입니다.
+
+@see [[m:Encoding::Windows_1255]]
+
+
+
+--- ISO_8859_9 -> Encoding
+--- ISO8859_9 -> Encoding
+
+ISO8859-9 인코딩입니다.
+
+ISO8859-1와 비슷한
+터키어를 나타내기 위한 8bit single-byte 인코딩입니다.
+
+@see [[m:Encoding::Windows_1254]]
+
+
+
+--- ISO_8859_10 -> Encoding
+--- ISO8859_10 -> Encoding
+
+ISO 8859-10 인코딩입니다.
+
+북유럽의 언어를 나타내는 8bit single-byte 인코딩입니다.
+
+
+
+--- ISO_8859_11 -> Encoding
+--- ISO8859_11 -> Encoding
+
+ISO8859-11 인코딩입니다.
+
+타이어를 나타내기 위한 8bit single-byte 인코딩입니다.
+
+@see [[m:Encoding::TIS_620]]
+
+
+
+--- ISO_8859_13 -> Encoding
+--- ISO8859_13 -> Encoding
+
+ISO8859-13 인코딩입니다.
+
+발트어파 언어를 나타내기 위한 8bit single-byte 인코딩입니다.
+
+@see [[m:Encoding::Windows_1257]]
+
+
+
+--- ISO_8859_14 -> Encoding
+--- ISO8859_14 -> Encoding
+
+ISO8859-14 인코딩입니다.
+
+켈트어파 언어를 나타내기 위한 8bit single-byte 인코딩입니다.
+
+@see [[m:Encoding::Windows_1257]]
+
+
+
+--- ISO_8859_15 -> Encoding
+--- ISO8859_15 -> Encoding
+
+ISO 8859-15 인코딩입니다.
+
+ISO 8859-1 の改訂版です。
+
+
+--- ISO_8859_16 -> Encoding
+--- ISO8859_16 -> Encoding
+
+ISO 8859-16 인코딩입니다.
+
+동유럽 주변의 언어를 나타내기 위한 8bit single-byte 인코딩입니다.
+
+--- KOI8_R -> Encoding
+--- CP878 -> Encoding
+
+KOI8-R 인코딩입니다.
+
+러시아어의 키릴 문자를 나타내는 데 쓰이는 8bit single-byte 인코딩입니다.
+
+@see [[url:http://en.wikipedia.org/wiki/KOI8-R]]
+
+
+
+--- KOI8_U -> Encoding
+
+KOI8-U 인코딩입니다.
+
+우크라이나어의 키릴 문자를 나타내는 데 쓰이는 single-byte 인코딩입니다.
+
+@see [[url:http://en.wikipedia.org/wiki/KOI8-U]]
+
+
+
+--- MacJapanese -> Encoding
+--- MACJAPAN -> Encoding
+--- MACJAPANESE -> Encoding
+--- MacJapan -> Encoding
+
+MacJapanese 인코딩입니다.
+
+Mac OS에서 9.x 버전까지 쓰였던 Shift_JIS 의 변종입니다.
+
+@see [[url:http://unicode.org/Public/MAPPINGS/VENDORS/APPLE/JAPANESE.TXT]],
+     [[url:http://ja.wikipedia.org/wiki/MacJapanese]]
+
+
+#@since 1.9.2
+--- SJIS_DOCOMO -> Encoding
+--- SJIS_DoCoMo -> Encoding
+
+SJIS-DoCoMo 인코딩입니다.
+
+Shift_JIS, CP932 인코딩의 변종입니다.
+DoCoMo 핸드폰에서 쓰이는 이모티콘이 포함되어있습니다.
+
+@see [[url:http://www.nttdocomo.co.jp/english/service/imode/make/content/pictograph/basic/index.html]],
+     [[url:http://www.nttdocomo.co.jp/english/service/imode/make/content/pictograph/extention/index.html]],
+
+
+--- SJIS_KDDI -> Encoding
+
+SJIS-KDDI 인코딩입니다.
+
+Shift_JIS, CP932 인코딩의 변종입니다.
+KDDI 핸드폰에서 쓰이는 이모티콘이 포함되어있습니다.
+
+@see [[url:http://www.au.kddi.com/ezfactory/tec/spec/img/typeD.pdf]]
+
+
+
+--- SJIS_SOFTBANK -> Encoding
+--- SJIS_SoftBank -> Encoding
+SJIS-SoftBank 인코딩입니다.
+
+Shift_JIS, CP932 인코딩의 변종입니다.
+SoftBank 핸드폰에서 쓰이는 이모티콘이 포함되어있습니다.
+
+@see [[url:http://creation.mb.softbank.jp/web/web_pic_about.html]],
+     [[url:http://www2.developers.softbankmobile.co.jp/dp/tool_dl/download.php?docid=120&companyid=]]
+
+
+--- UTF8_DOCOMO -> Encoding
+--- UTF8_DoCoMo -> Encoding
+UTF8-DoCoMo 인코딩입니다.
+
+UTF-8 인코딩의 변종입니다.
+DoCoMo 핸드폰에서 쓰이는 이모티콘이 포함되어있습니다.
+
+
+@see [[url:http://www.nttdocomo.co.jp/english/service/imode/make/content/pictograph/basic/index.html]],
+     [[url:http://www.nttdocomo.co.jp/english/service/imode/make/content/pictograph/extention/index.html]],
+
+
+--- UTF8_KDDI -> Encoding
+
+UTF8-KDDI 인코딩입니다.
+
+UTF8 인코딩의 변종입니다.
+KDDI 핸드폰에서 쓰이는 이모티콘이 포함되어있습니다.
+
+
+@see [[url:http://www.au.kddi.com/ezfactory/tec/spec/img/typeD.pdf]]
+
+--- UTF8_SOFTBANK -> Encoding
+--- UTF8_SoftBank -> Encoding
+UTF8-SoftBank 인코딩입니다.
+
+UTF-8 인코딩의 변종입니다.
+SoftBank 핸드폰에서 쓰이는 이모티콘이 포함되어있습니다.
+
+
+@see [[url:http://creation.mb.softbank.jp/web/web_pic_about.html]],
+     [[url:http://www2.developers.softbankmobile.co.jp/dp/tool_dl/download.php?docid=120&companyid=]]
+
+
+#@end
+
+--- STATELESS_ISO_2022_JP -> Encoding
+--- Stateless_ISO_2022_JP -> Encoding
+stateless-ISO-2022-JP 인코딩입니다.
+
+ISO-2022-JPをステートレスに扱うための方式です。
+Emacs-Mule エンコーディングを元にしています。
+
+#@since 1.9.2
+--- ISO_2022_JP_KDDI -> Encoding
+ISO-2022-JP-KDDI 인코딩입니다.
+
+ISO-2022-JP 인코딩의 변종입니다.
+KDDI 핸드폰에서 쓰이는 이모티콘이 포함되어있습니다.
+
+
+@see [[url:http://www.au.kddi.com/ezfactory/tec/spec/img/typeD.pdf]]
+
+
+
+--- STATELESS_ISO_2022_JP_KDDI -> Encoding
+--- Stateless_ISO_2022_JP_KDDI -> Encoding
+stateless-ISO-2022-JP-KDDI 인코딩입니다.
+
+stateless-ISO-2022-JP 인코딩의 변종입니다.
+KDDI 핸드폰에서 쓰이는 이모티콘이 포함되어있습니다.
+
+
+@see [[url:http://www.au.kddi.com/ezfactory/tec/spec/img/typeD.pdf]]
+
+
+#@end
+
+--- TIS_620 -> Encoding
+TIS-620 인코딩입니다.
+
+ISO8859-11와 거의 같은 타이어를 나타내기 위한 인코딩입니다.
+
+@see [[url:http://en.wikipedia.org/wiki/Thai_Industrial_Standard_620-2533]]
+
+
+
+--- Windows_1250 -> Encoding
+--- CP1250 -> Encoding
+--- WINDOWS_1250 -> Encoding
+
+Windows-1250 인코딩입니다.
+
+ISO8859-2 인코딩의 변종입니다.
+
+@see [[url:http://www.microsoft.com/globaldev/reference/sbcs/1250.mspx]],
+     [[url:http://en.wikipedia.org/wiki/Windows-1250]]
+
+--- Windows_1251 -> Encoding
+--- CP1251 -> Encoding
+--- WINDOWS_1251 -> Encoding
+
+Windows-1251 인코딩입니다.
+
+키릴 문자를 사용하는 언어를 나타내기 위한 8bit single-byte 인코딩입니다.
+
+@see [[url:http://www.iana.org/assignments/character-sets]],
+     [[url:http://www.microsoft.com/globaldev/reference/sbcs/1251.mspx]],
+     [[url:http://en.wikipedia.org/wiki/Windows-1251]]
+
+--- Windows_1252 -> Encoding
+--- CP1252 -> Encoding
+--- WINDOWS_1252 -> Encoding
+
+Windows-1252 인코딩입니다.
+
+ISO8859-1의 변종입니다.
+
+@see [[m:Encoding::ISO_8859_1]]
+     [[url:http://www.iana.org/assignments/character-sets]],
+     [[url:http://www.microsoft.com/globaldev/reference/sbcs/1252.mspx]],
+     [[url:http://en.wikipedia.org/wiki/Windows-1252]]
+
+
+--- Windows_1253 -> Encoding
+--- CP1253 -> Encoding
+--- WINDOWS_1253 -> Encoding
+
+Windows-1253 인코딩입니다.
+
+ISO8859-7 인코딩의 변종입니다.
+
+@see [[m:Encoding::ISO_8859_7]],
+     [[url:http://www.iana.org/assignments/character-sets]],
+     [[url:http://www.microsoft.com/globaldev/reference/sbcs/1253.mspx]],
+     [[url:http://en.wikipedia.org/wiki/Windows-1253]]
+
+--- Windows_1254 -> Encoding
+--- CP1254 -> Encoding
+--- WINDOWS_1254 -> Encoding
+
+Windows-1254 인코딩입니다.
+
+ISO8859-9 인코딩의 변종입니다.
+
+@see [[m:Encoding::ISO_8859_9]],
+     [[url:http://www.iana.org/assignments/character-sets]],
+     [[url:http://www.microsoft.com/globaldev/reference/sbcs/1254.mspx]],
+     [[url:http://en.wikipedia.org/wiki/Windows-1254]]
+
+--- Windows_1255 -> Encoding
+--- CP1255 -> Encoding
+--- WINDOWS_1255 -> Encoding
+
+Windows-1255 인코딩입니다.
+
+ISO8859-8 인코딩의 변종입니다.
+
+@see [[m:Encoding::ISO_8859_8]],
+     [[url:http://www.iana.org/assignments/character-sets]],
+     [[url:http://www.microsoft.com/globaldev/reference/sbcs/1255.mspx]],
+     [[url:http://en.wikipedia.org/wiki/Windows-1255]],
+
+
+--- Windows_1256 -> Encoding
+--- CP1256 -> Encoding
+--- WINDOWS_1256 -> Encoding
+Windows-1256 인코딩입니다.
+
+Windows에서 사용되는 아랍 문자를 나타내는 8bit single-byte 인코딩입니다.
+
+@see [[m:Encoding::ISO_8859_6]],
+     [[url:http://www.iana.org/assignments/character-sets]],
+     [[url:http://www.microsoft.com/globaldev/reference/sbcs/1256.mspx]],
+     [[url:http://en.wikipedia.org/wiki/Windows-1256]]
+
+
+--- Windows_1257 -> Encoding
+--- CP1257 -> Encoding
+--- WINDOWS_1257 -> Encoding
+Windows-1257 인코딩입니다.
+
+ISO8859-13 인코딩의 변종입니다.
+
+@see [[m:Encoding::ISO8859_13]],
+     [[url:http://www.iana.org/assignments/character-sets]],
+     [[url:http://www.microsoft.com/globaldev/reference/sbcs/1257.mspx]],
+     [[url:http://en.wikipedia.org/wiki/Windows-1257]],
+
+
+--- Windows_1258 -> Encoding
+--- CP1258 -> Encoding
+--- WINDOWS_1258 -> Encoding
+
+WINDOWS-1258 인코딩입니다.
+
+베트남어를 나타내기 위한 8bit single-byte 인코딩입니다.
+
+@see [[url:http://en.wikipedia.org/wiki/Windows-1258]]
+
+--- Windows_31J -> Encoding
+--- CP932 -> Encoding
+--- CSWINDOWS31J -> Encoding
+--- CsWindows31J -> Encoding
+--- WINDOWS_31J -> Encoding
+#@since 1.9.3
+--- PCK -> Encoding
+--- SJIS -> Encoding
+#@end
+
+Windows-31J、Windows で用いられる、シフトJIS亜種で、CP932とも言います。
+
+7bit 部分が論理的には US-ASCIIであり、また Windows の機種依存文字を扱うことができます。
+
+@see [[url:http://www2d.biglobe.ne.jp/~msyk/charcode/cp932/index.html]],
+     [[url:http://legacy-encoding.sourceforge.jp/wiki/index.php?cp932]]
+
+--- Windows_874 -> Encoding
+--- CP874 -> Encoding
+--- WINDOWS_874 -> Encoding
+
+Windows-874 인코딩입니다.
+
+타이어를 나타내기 위한 ISO8859-11의 변종 인코딩입니다.
+
+
+@see [[m:Encoding::TIS_620]], [[m:Encoding::ISO_8859_11]],
+     [[url:http://www.microsoft.com/globaldev/reference/sbcs/874.mspx]]
+
+
+--- EUCJP_MS -> Encoding
+--- EucJP_ms -> Encoding
+--- EUC_JP_MS -> Encoding
+eucJP-ms,Unix에서 사용되는 일본어 EUC 인코딩의 변종입니다.
+
+EUC-JPに加え、Windowsの機種依存文字とユーザ定義文字を扱うことができます。@see [[url:http://www2d.biglobe.ne.jp/~msyk/charcode/cp932/eucJP-ms.html]],
+     [[url:http://legacy-encoding.sourceforge.jp/wiki/index.php?eucJP-ms]],
+     [[url:http://blog.livedoor.jp/numa2666/archives/50980727.html]]
+
+--- MacCentEuro -> Encoding
+--- MACCENTEURO -> Encoding
+MacCentEuro 인코딩입니다.
+
+Mac OSで使われる
+8bit single-byteエンコーディングで、
+中欧および南東欧の言語を取り扱うものです。
+
+@see [[url:http://en.wikipedia.org/wiki/Macintosh_Central_European_encoding]]
+
+--- MacCroatian -> Encoding
+--- MACCROATIAN -> Encoding
+MacCroatian 인코딩입니다.
+
+Mac OS で使われる
+8bit single-byteエンコーディングで、
+クロアチア語、スベロニア語を取り扱うものです。
+
+@see [[url:http://www.unicode.org/Public/MAPPINGS/VENDORS/APPLE/CROATIAN.TXT]]
+
+--- MacCyrillic -> Encoding
+--- MACCYRILLIC -> Encoding
+
+MacCyrillic 인코딩입니다.
+
+Mac OS で使われる 8bit single-byte エンコーディングで、
+キリル文字を取り扱うものです。
+
+@see [[url:http://en.wikipedia.org/wiki/Macintosh_Cyrillic_encoding]]
+
+--- MacGreek -> Encoding
+--- MACGREEK -> Encoding
+MacGreek 인코딩입니다.
+
+Mac OSで使われる
+8bit single-byte エンコーディングで、
+ギリシャ語のために使われます。
+
+@see [[url:http://www.unicode.org/Public/MAPPINGS/VENDORS/APPLE/GREEK.TXT]]
+
+--- MacIceland -> Encoding
+--- MACICELAND -> Encoding
+
+MacIceland 인코딩입니다.
+
+Mac OSで使われる
+8bit single-byte エンコーディングで、
+アイスランド語のために使われます
+
+@see [[url:http://en.wikipedia.org/wiki/Mac_Icelandic_encoding]]
+
+--- MacRoman -> Encoding
+--- MACROMAN -> Encoding
+MacRoman 인코딩입니다.
+
+Mac OSで使われる
+8bit single-byte エンコーディングで、
+西欧を中心としたラテン文字を用いる諸語を取り扱うためのものです。
+
+IANA character-sets で "macintosh" で表現されるものです。
+
+@see [[url:http://en.wikipedia.org/wiki/Mac_OS_Roman]]
+
+--- MacRomania -> Encoding
+--- MACROMANIA -> Encoding
+MacRoman 인코딩입니다.
+
+Mac OSで使われる
+8bit single-byte エンコーディングで、
+ルーマニア語のために使われます。
+
+@see [[url:http://www.unicode.org/Public/MAPPINGS/VENDORS/APPLE/ROMANIAN.TXT]]
+
+--- MacThai -> Encoding
+--- MACTHAI -> Encoding
+MacThai 인코딩입니다.
+
+타이어를 나타내기 위한 ISO8859-11의 변종 인코딩입니다.
+
+@see [[m:Encoding::TIS_620]], [[m:Encoding::ISO_8859_11]]
+
+--- MacTurkish -> Encoding
+--- MACTURKISH -> Encoding
+MacTurkish 인코딩입니다.
+
+Mac OSで使われる
+8bit single-byte エンコーディングで、
+トルコ語のために使われます。
+
+@see [[url:http://www.unicode.org/Public/MAPPINGS/VENDORS/APPLE/TURKISH.TXT]]
+
+--- MacUkraine -> Encoding
+--- MACUKRAINE -> Encoding
+MacUkraine 인코딩입니다.
+
+Mac OS で使われる、ウクライナ語キリル文字を取り扱うエンコーディング。MacCyrillic 인코딩의 변종입니다.
+
+@see [[url:http://en.wikipedia.org/wiki/Macintosh_Ukrainian_encoding]]
+
+--- EMACS_MULE -> Encoding
+--- Emacs_Mule -> Encoding
+
+Emacs-Mule 인코딩입니다.
+
+Emacsの多言語化(Mule)で使われているステートレスのエンコーディングです。
+
+@see [[url:http://www.m17n.org/mule/pricai96/mule.en.html]]
+
+
+= class EncodingError < StandardError
+인코딩에 관련된 에러를 다루는 기반 클래스
+
+= class Encoding::CompatibilityError < EncodingError
+두 인코딩 간에 호환성이 없으면 발생하는 예외입니다.
+
+인코딩이 다른 문자열을 연결하려고 할 때 발생합니다.
+
+  "あ".encode("EUC-JP") + "あ".encode("UTF-8")
+  #=> Encoding::CompatibilityError: incompatible character encodings: EUC-JP and UTF-8
+
+= class Encoding::UndefinedConversionError < EncodingError
+인코딩 변환이 불가능한 문자가 있으면 발생합니다.
+
+예를 들어 UTF-8에만 있는 문자를 EUC-JP로 변환하려고 하면 발생합니다.
+  "\u2603".encode(Encoding::EUC_JP)
+  #=> Encoding::UndefinedConversionError: U+2603 from UTF-8 to EUC-JP
+
+
+変換が多段階でなされ、その途中で例外が生じた場合は、
+例外オブジェクトが保持するエラー情報はその中間のものになります。  ec = Encoding::Converter.new("ISO-8859-1", "EUC-JP")
+  # ISO-8859-1 -> UTF-8 -> EUC-JP
+  begin
+    ec.convert("\xa0")
+    # NO-BREAK SPACE, which is available in UTF-8 but not in EUC-JP.
+  rescue Encoding::UndefinedConversionError
+    p $!.source_encoding              #=> #<Encoding:UTF-8>
+    p $!.destination_encoding         #=> #<Encoding:EUC-JP>
+    p $!.source_encoding_name         #=> "UTF-8"
+    p $!.destination_encoding_name    #=> "EUC-JP"
+    puts $!.error_char.dump   #=> "\u{a0}"
+    p $!.error_char.encoding  #=> #<Encoding:UTF-8>
+  end
+
+
+== Instance Methods
+--- destination_encoding -> Encoding
+エラーを発生させた変換の変換先のエンコーディングを [[c:Encoding]]
+オブジェクトで返します。
+
+@see [[m:Encoding::UndefinedConversionError#source_encoding]]
+
+--- destination_encoding_name -> String
+エラーを発生させた変換の変換先のエンコーディングを文字列で返します。
+
+@see [[m:Encoding::UndefinedConversionError#destination_encoding]]
+
+--- error_char -> String
+エラーを発生させた1文字を文字列で返します。
+
+  ec = Encoding::Converter.new("UTF-8", "EUC-JP")
+  begin
+    ec.convert("\u{a0}")
+  rescue Encoding::UndefinedConversionError
+    puts $!.error_char.dump   #=> "\u{a0}"
+  end
+
+--- source_encoding -> Encoding
+エラーを発生させた変換の変換元のエンコーディングを [[c:Encoding]]
+オブジェクトで返します。
+
+変換が多段階になされる場合は元の文字列のものではない
+エンコーディングが返される場合があることに注意してください。
+
+@see [[m:Encoding::UndefinedConversionError#destination_encoding]]
+
+--- source_encoding_name -> Encoding
+エラーを発生させた変換の変換元のエンコーディングを文字列で返します。
+
+@see [[m:Encoding::UndefinedConversionError#source_encoding]]
+
+= class Encoding::InvalidByteSequenceError < EncodingError
+文字列がそのエンコーディングにおいて不正なバイト列である場合に発生
+する例外。
+
+通常エンコーディング変換時に発生します。
+
+  "\x82\xa0".force_encoding("cp932").encode("UTF-8")
+  #=> "あ"
+  "\x82\xa0".force_encoding("EUC-JP").encode("UTF-8")
+  #=> Encoding::InvalidByteSequenceError: "\x82" on EUC-JP
+
+== Instance Methods
+--- destination_encoding -> Encoding
+エラーを発生させた変換の変換先のエンコーディングを [[c:Encoding]]
+オブジェクトで返します。
+
+@see [[m:Encoding::InvalidByteSequenceError#source_encoding]],
+     [[m:Encoding::UndefinedConversionError#destination_encoding]]
+
+--- destination_encoding_name -> String
+エラーを発生させた変換の変換先のエンコーディングを文字列で返します。
+
+@see [[m:Encoding::InvalidByteSequenceError#destination_encoding]]
+
+--- source_encoding -> Encoding
+エラーを発生させた変換の変換元のエンコーディングを [[c:Encoding]]
+オブジェクトで返します。
+
+@see [[m:Encoding::InvalidByteSequenceError#destination_encoding]],
+     [[m:Encoding::UndefinedConversionError#source_encoding]]
+
+--- source_encoding_name -> Encoding
+エラーを発生させた変換の変換元のエンコーディングを文字列で返します。
+
+@see [[m:Encoding::InvalidByteSequenceError#source_encoding]]
+
+--- error_bytes -> String
+エラー発生時に捨てられたバイト列を返します。
+
+
+  ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1")
+  begin
+    ec.convert("abc\xA1\xFFdef")
+  rescue Encoding::InvalidByteSequenceError
+    p $!    #=> #<Encoding::InvalidByteSequenceError: "\xA1" followed by "\xFF" on EUC-JP>
+    puts $!.error_bytes.dump          #=> "\xA1"
+    puts $!.readagain_bytes.dump      #=> "\xFF"
+  end
+
+@see [[m:Encoding::InvalidByteSequenceError#readagain_bytes]]
+
+--- readagain_bytes -> String
+エラー発生時に読み直さなければならないバイト列を返します。
+
+@see [[m:Encoding::InvalidByteSequenceError#error_bytes]]
+
+--- incomplete_input?-> bool
+エラー発生時に入力文字列が不足している場合に真を返します。
+
+つまり、マルチバイト文字列の途中で文字列が終わっている場合に
+真を返します。これは後続の入力を追加することでエラーが
+解消する可能性があることを意味します。
+
+  ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1")
+
+  begin
+    ec.convert("abc\xA1z")
+  rescue Encoding::InvalidByteSequenceError
+    p $!    #=> #<Encoding::InvalidByteSequenceError: "\xA1" followed by "z" on EUC-JP>
+    p $!.incomplete_input?#=> false
+  end
+
+  begin
+    ec.convert("abc\xA1")
+    ec.finish
+  rescue Encoding::InvalidByteSequenceError
+    p $!#=> #<Encoding::InvalidByteSequenceError: incomplete "\xA1" on EUC-JP>
+    p $!.incomplete_input?#=> true
+  end
+
+= class Encoding::ConverterNotFoundError < EncodingError
+指定した名前のエンコーディング変換をする変換器が
+存在しない場合に発生する例外。
+
+  "あ".encode("Foo")
+  #=> Encoding::ConverterNotFoundError: code converter not found (UTF-8 to Foo)
+
+#@end

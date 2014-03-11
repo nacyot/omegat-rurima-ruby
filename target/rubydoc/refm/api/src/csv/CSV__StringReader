@@ -1,0 +1,26 @@
+#@since 1.8.0
+
+= class CSV::StringReader < CSV::Reader
+CSV形式の文字列の読み込み（パース）時に使用されるクラス
+
+
+== Class Methods
+
+--- new(string, fs = ',', rs = nil) -> CSV::StringReader
+CSV形式の文字列を初期値として与えてインスタンスを生成します。
+
+@param string 初期値の文字列
+@param fs フィールドセパレータの指定。          기본설정은 nil이며, 이 때 구분자는 ','가 됩니다.
+@param rs 행 구분 문자를 지정합니다.nil 지정시 기본값은 CrLf / Lf.
+          Cr으로 나누고 싶으면 ?\r을 지정합니다.
+
+== Private Instance Methods
+
+--- get_row(row) -> Fixnum
+CSV 形式の文字列から1 行(row)分のデータを配列に変換し、row に出力する。
+
+@param row 初期値の文字列
+@return パースして出力した1行分のデータの cell の数(変換した配列のサイズ)
+
+#@end
+

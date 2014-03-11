@@ -1,0 +1,5 @@
+= class RDoc::ClassModule < RDoc::Context
+
+클래스와 모듈을 나타내는 기반 클래스입니다.
+
+라이브러리 내부에서 사용합니다.

@@ -1,0 +1,1223 @@
+= class Hash < Object
+include Enumerable
+
+해쉬 테이블(연관배열) 클래스입니다.해쉬를 사용하면 임의의 키 객체와 임의의 값 객체를 연결할 수 있습니다.
+
+해쉬는 대부분의 경우 아래의 리터럴 ([[ref:d:spec/literal#hash]])을 사용해서 생성합니다.
+#@#リテラル-ハッシュ式へのリンクつける
+
+  {a => b, ... }   # a는 키, b는 값
+#@since 1.9.1
+  {s: b , ... }    # { :s => b, ... } 와 같음.키가 심볼일 경우에 사용할 수 있는 축약 표현
+#@end
+
+キーには任意の種類のオブジェクトを用いることができますが、
+以下の２つのメソッドが適切に定義してある必要があります。  * [[m:Object#hash]] ハッシュの格納に用いられるハッシュ値の計算
+  * [[m:Object#eql?]] キーの同一性判定
+
+破壊的操作によってキーとして与えたオブジェクトの内容が変化し、[[m:Object#hash]] の返す
+値が変わるとハッシュから値が取り出せなくなりますから、
+#@since 1.9.1
+[[c:Array]]、[[c:Hash]]
+#@else
+[[c:Array]]
+#@end
+などのインスタンスはキーに向きません。[[m:Hash#rehash]]를 참조.
+
+ただし、文字列をキーとして与えた場合は、文字列をコピーし、コピーを更新不可に設定 ([[m:Object#freeze]]) してキーとして
+使用します。キーとして使われている文字列を更新しようとすると例外
+[[c:TypeError]] が発生するので rehash を呼ぶ必要性は生じません。
+
+ハッシュにはデフォルト値を設定することができます。存在しないキーを探索したときに返す値で、未設定時は nil です。
+デフォルト値には値形式とブロック形式があります。
+実際にデフォルト値がどのように扱われるかは各メソッドの説明を参照してください。
+
+#@since 1.9.1
+ハッシュに含まれる要素の順序が保持されるようになりました。ハッシュにキーが追加された順序で列挙します。#@else
+ハッシュに含まれる要素の順序は保持されません。列挙する順序は不定です。#@end
+
+
+
+== Class Methods
+
+#@since 1.9.1
+--- try_convert(obj) -> Hash | nil
+
+to_hash メソッドを用いて obj をハッシュに変換しようとします。
+
+어떤 이유로 변환에 실패한 경우 nil을 리턴합니다.
+このメソッドは引数がハッシュであるかどうかを調べるために使えます。
+
+   Hash.try_convert({1=>2})   # => {1=>2}
+   Hash.try_convert("1=>2")   # => nil
+#@end
+
+--- [](other) -> Hash
+
+새로운 해쉬를 생성합니다.
+引数otherと同一のキーと値を持つ新たなハッシュを生成して返します。
+
+引数otherがハッシュではない場合、otherのメソッドto_hashを使って暗黙の変換を試みます。
+
+デフォルト値はコピーしません。生成されたハッシュのデフォルト値は nil です。
+
+引数otherと生成したハッシュは同じオブジェクトを参照することになるので、
+一方でキーや値に破壊的操作を行うともう片方にも影響します。
+
+@param other 生成元となるハッシュまたはメソッド to_hash でハッシュに変換できるオブジェクトです。
+
+  h = {1 => "value"}
+  h.default = "none"
+  
+  g = Hash[h]
+  p g #=> {1=>"value"}
+  
+  p h[:no] #=> "none"
+  p g[:no] #=> nil
+  
+  h[:add] = "some"
+  p h #=> {1=>"value", :add=>"some"}
+  p g #=> {1=>"value"}
+  
+  h[1] << 'plus' #파괴적인 변경
+  p h #=> {1=>"valueplus", :add=>"some"}
+  p g #=> {1=>"valueplus"}
+
+--- [](*key_and_value)  -> Hash
+
+새로운 해쉬를 생성합니다.
+인수는 반드시 짝수개여야만 합니다.홀수번째 인수는 키가 되고 짝수번째 인수는 키에 연결된 값이 됩니다.
+
+이 메소드로 생성하는 해쉬는 기반값을 지정할 수 없습니다.
+기본 값을 지정하려면 [[m:Hash.new]] 메소드를 사용하거나 [[m:Hash#default=]] 메소드로 기본값을 명시적으로 지정해주세요.
+
+@param key_and_value 생성하려는 해쉬의 키와 값의 조합을 지정합니다.반드시 0을 포함해 짝수개를 지정해야만 합니다.
+@raise ArgumentError 인수가 홀수개이면 발생합니다.
+
+아래는 배열로 해쉬를 만드는 예제입니다.
+
+#@until 1.9.1
+(1) [키, 값, ...] 배열에서 해쉬 생성
+
+  ary = [1,"a", 2,"b", 3,"c"]
+  p Hash[*ary]  # => {1=>"a", 2=>"b", 3=>"c"}
+
+(2) 키와 값을 묶은 배열로 해쉬 생성
+
+  alist = [[1,"a"], [2,"b"], [3,"c"]]
+  p Hash[*alist.flatten]  # => {1=>"a", 2=>"b", 3=>"c"}
+
+(3) 키 배열과 값 배열로 해쉬 생성
+
+  keys = [1, 2, 3]
+  vals = ["a", "b", "c"]
+  alist = keys.zip(vals)   # あるいは alist = [keys,vals].transpose
+  p Hash[*alist.flatten]   # => {1=>"a", 2=>"b", 3=>"c"}
+
+#@since 1.8.7
+(4) 키나 값이 배열인 경우
+
+  alist = [[1,["a"]], [2,["b"]], [3,["c"]], [[4,5], ["a", "b"]]]
+  hash = Hash[alist] # => {1=>["a"], 2=>["b"], 3=>["c"], [4, 5]=>["a", "b"]}
+
+#@else
+(4) 키나 값이 배열이면 (2)나 (3)의 방법은 사용할 수 없으며, 일일히 대입해줘야합니다.
+
+  h = Hash.new
+  alist = [[1,["a"]], [2,["b"]], [3,["c"]]]
+  alist.each {|k,v|
+    h[k] = v
+  }
+  p h  # => {1=>["a"], 2=>["b"], 3=>["c"]}
+#@end
+#@end
+#@since 1.9.1
+(1) [키, 값, ...] 배열에서 해쉬 생성
+
+  ary = [1,"a", 2,"b", 3,["c"]]
+  p Hash[*ary]  # => {1=>"a", 2=>"b", 3=>["c"]}
+
+(2) 키와 값을 묶은 배열로 해쉬 생성
+
+  alist = [[1,"a"], [2,"b"], [3,["c"]]]
+  p Hash[*alist.flatten(1)]  # => {1=>"a", 2=>"b", 3=>["c"]}
+
+(3) 키 배열과 값 배열로 해쉬 생성
+
+  keys = [1, 2, 3]
+  vals = ["a", "b", ["c"]]
+  alist = keys.zip(vals)     # あるいは alist = [keys,vals].transpose
+  p Hash[alist]  # => {1=>"a", 2=>"b", 3=>["c"]}
+
+(4) 키나 값 배열인 경우
+
+  alist = [[1,["a"]], [2,["b"]], [3,["c"]], [[4,5], ["a", "b"]]]
+  hash = Hash[alist] # => {1=>["a"], 2=>["b"], 3=>["c"], [4, 5]=>["a", "b"]}
+#@end
+
+--- new(ifnone = nil) -> Hash
+
+비어있는 해쉬를 생성합니다.ifnone은 키에 대한 값이 없는 경우에 기본값으로 사용됩니다.설정한 기본값은 [[m:Hash#default]]으로 참조할 수 있습니다.
+
+ifnone을 생략한 Hash.new 메소드는 {} 연산자와 같습니다.
+
+기본값으로 전부 동일한 객체 ifnone을 리턴합니다.
+それにより、一箇所のデフォルト値の変更が他の値のデフォルト値にも影響します。
+
+  h = Hash.new([])
+  h[0] << 0
+  h[1] << 1
+  p h.default #=> [0, 1]
+
+これを避けるには、破壊的でないメソッドで再代入する必要が有ります。
+また、このようなミスを防ぐためにもifnoneは freeze して破壊的操作を禁止しておくのが無難です。
+
+#@#デフォルト値の扱いには注意が必要です( [[trap:Hash]] )
+
+@param ifnone キーに対応する値が存在しない時のデフォルト値です。
+
+  h = Hash.new([])
+
+  p h[1]                  #=> []
+  p h[1].object_id        #=> 6127150
+  p h[1] << "bar"         #=> ["bar"]
+  p h[1]                  #=> ["bar"]
+  
+  p h[2]                  #=> ["bar"]
+  p h[2].object_id        #=> 6127150
+  
+  p h                     #=> {}
+
+
+  h = Hash.new([].freeze)
+  h[0] += [0] #파괴적이지 않은 배소드는 OK
+  h[1] << 1
+  # 에러 '<<': can't modify frozen array (TypeError)
+
+--- new {|hash, key| ... } -> Hash
+빈 배열을 생성합니다.볼록을 평가한 결과를 기본값으로 사용합니다.설정된 기본값은 [[m:Hash#default_proc]] 메소드로 참조할 수 있습니다.
+
+値が設定されていないハッシュ要素を参照するとその都度ブロックを
+実行し、その結果を返します。
+ブロックにはそのハッシュとハッシュを参照したときのキーが渡されます。
+
+@raise ArgumentError ブロックと通常引数を同時に与えると発生します。
+
+  # ブロックではないデフォルト値は全部同一のオブジェクトなので、
+  # 破壊的変更によって他のキーに対応する値も変更されます。  h = Hash.new("foo")
+  
+  p h[1]                  #=> "foo"
+  p h[1].object_id        #=> 6127170
+  p h[1] << "bar"         #=> "foobar"
+  p h[1]                  #=> "foobar"
+  
+  p h[2]                  #=> "foobar"
+  p h[2].object_id        #=> 6127170
+  
+  p h                     #=> {}
+  
+  # ブロックを与えると、対応する値がまだ無いキーが呼び出される度に
+  # ブロックを評価するので、全て別のオブジェクトになります。  h = Hash.new {|hash, key| hash[key] = "foo"}
+  
+  p h[1]                  #=> "foo"
+  p h[1].object_id        #=> 6126900
+  p h[1] << "bar"         #=> "foobar"
+  p h[1]                  #=> "foobar"
+  
+  p h[2]                  #=> "foo"
+  p h[2].object_id        #=> 6126840
+  
+  p h                     #=> {1=>"foobar", 2=>"foo"}
+
+  # 値が設定されていないときに(fetchのように)例外をあげるようにもできる
+  h = Hash.new {|hash, key|
+                  raise(IndexError, "hash[#{key}] has no value")
+               }
+  h[1]
+  # エラー hash[1] has no value (IndexError)
+
+@see [[m:Hash#default=]],[[m:Hash#default]],[[m:Hash#default_proc]]
+
+
+== Instance Methods
+
+--- values -> [object]
+
+ハッシュの全値の配列を返します。
+
+   h1 = { "a" => 100, 2 => ["some"], :c => "c" }
+   p h1.values         #=> [100, ["some"], "c"]
+
+@see [[m:Hash#keys]],[[m:Hash#to_a]]
+
+--- to_a -> [Array]
+
+キーと値からなる 2 要素の配列を並べた配列を生成して返します。
+
+   h1 = { "a" => 100, 2 => ["some"], :c => "c" }
+   p h1.to_a           #=> [["a", 100], [2, ["some"]], [:c, "c"]]
+
+@see [[m:Hash#keys]],[[m:Hash#values]]
+
+--- keys -> [object]
+
+全キーの配列を返します。
+
+   h1 = { "a" => 100, 2 => ["some"], :c => "c" }
+   p h1.keys           #=> ["a", 2, :c]
+
+@see [[m:Hash#values]],[[m:Hash#to_a]]
+
+--- to_hash -> self
+
+self를 리턴합니다.
+
+#@since 2.0.0
+@see [[m:Object#to_hash]], [[m:Hash#to_h]]
+#@else
+@see [[m:Object#to_hash]]
+#@end
+
+#@since 2.0.0
+--- to_h -> self | Hash
+
+self를 리턴합니다.[[c:Hash]] クラスのサブクラスから呼び出した場合は
+self を [[c:Hash]] オブジェクトに変換します。#@end
+
+--- length -> Integer
+--- size -> Integer
+
+해쉬의 요소 개수를 리턴합니다.
+
+#@since 1.9.1
+  puts({ant: 9 ,dog: 101 ,cat: 3}.length) #=> 3
+#@else
+  puts({:ant => 9 ,:dog => 101 ,:cat => 3}.length) #=> 3
+#@end
+
+--- empty?-> bool
+
+해쉬가 비어있으면 true를 리턴합니다.
+
+  puts({}.empty?) #=> true
+
+--- invert -> Hash
+
+値からキーへのハッシュを作成して返します。
+
+異なるキーに対して等しい値が登録されている場合の結果は不定であることに
+注意してください、そのような場合にこのメソッドを利用することは意図され
+ていません。
+
+  h = { "a" => 0, "b" => 100, "c" => 200, "d" => 300, "e" => 300 }
+  p h.invert   #=> {0=>"a", 100=>"b", 200=>"c", 300=>"e"}
+
+==== 参考
+値が重複していたときに備えて、変換後の値を配列として保持するには、次のようにします。
+
+  def safe_invert(orig_hash)
+    result = Hash.new{|h,key| h[key] = [] }
+    orig_hash.each{|key, value|
+      result[value] << key
+    }
+    result
+  end
+  p safe_invert({"a"=>1, "b"=>1, "c"=>3})
+      #=> {1=>["a", "b"], 3=>["c"]}
+  
+  #출처：Ruby 레시피 북(Rubyレシピブック) No.120
+
+#@since 1.9.1
+@see [[m:Hash#key]]
+#@else
+@see [[m:Hash#index]]
+#@end
+
+--- fetch(key, default = nil) {|key| ... } -> object
+
+key に関連づけられた値を返します。該当するキーが登録されてい
+ない時には、引数 default が与えられていればその値を、ブロッ
+クが与えられていればそのブロックを評価した値を返します。
+
+fetchはハッシュ自身にデフォルト値が設定されていても単に無視します（挙動に変化がありません）。
+
+@param key 찾으려는 키를 지정합니다.
+@param default 該当するキーが登録されていない時の返り値を指定します。#@since 1.9.1
+@raise  KeyError   引数defaultもブロックも与えられてない時、キーの探索に失敗すると発生します。#@else
+@raise  IndexError 引数defaultもブロックも与えられてない時、キーの探索に失敗すると発生します。#@end
+
+#@since 1.9.1
+  h = {one: nil}
+#@else
+  h = {:one => nil}
+#@end
+  p h[:one],h[:two]                        #=> nil,nil これではキーが存在するのか判別できない。  p h.fetch(:one)                          #=> nil
+  p h.fetch(:two)                          # エラー key not found (KeyError)
+  p h.fetch(:two,"error")                  #=> "error"
+  p h.fetch(:two){|key|"#{key} not exist"} #=> "two not exist"
+  p h.fetch(:two, "error"){|key|           #=> "two not exist"
+      "#{key} not exit"                    #  warning: block supersedes default value argument
+    }                                      #  경고가 출력됩니다.
+  
+  h.default = "default"
+  p h.fetch(:two)                          # エラー key not found (KeyError)
+
+@see [[m:Hash#[] ]]
+
+--- has_key?(key) -> bool
+--- include?(key) -> bool
+--- key?(key)     -> bool
+--- member?(key)  -> bool
+
+ハッシュが key をキーとして持つ時真を返します。
+
+@param key 찾으려는 키를 지정합니다.
+
+  p({1 => "one"}.has_key?(1)) #=> true
+  p({1 => "one"}.has_key?(2)) #=> false
+
+@see [[m:Hash#has_value?]]
+
+--- has_value?(value) -> bool
+--- value?(value)     -> bool
+
+ハッシュが value を値として持つ時真を返します。
+値の一致判定は == で行われます。
+
+@param value 探索する値を指定します。
+
+  p({1 => "one"}.has_value?("one")) #=> true
+  p({1 => "one"}.has_value?("two")) #=> false
+
+@see [[m:Hash#has_key?]]
+
+--- []=(key, value)
+--- store(key, value) -> object
+
+key에 대해서 value를 연결합니다.value를 리턴합니다.
+
+@param key 키를 지정합니다.
+@param value 값을 지정합니다.
+
+  
+  h = {}
+  
+  h[:key] = "value"
+  p h #=>{:key => "value"}
+
+@see [[m:Hash#[] ]]
+
+--- clear -> self
+
+해쉬의 내용을 전부 지웁니다.
+
+지운 후 self를 리턴합니다.
+설정해둔 기본값은 지워지지 않습니다.
+
+  h = Hash.new("default value")
+  h[:some] = "some"
+  p h #=> {:some=>"some"}
+  
+  h.clear
+  
+  p h #=> {}
+  p h.default #=> "default value"
+
+#@since 1.9.1
+--- compare_by_identity -> self
+
+ハッシュのキーの一致判定をオブジェクトの同一性で判定するように変更します。
+
+デフォルトでは、キーのオブジェクトによっては内容が同じならキーが一致しているとみなされますが、より厳密に
+[[m:Object#object_id]]が一致しているかどうかを条件とするようにselfを変更します。
+
+selfが変化する破壊的メソッドです。
+
+@return self를 리턴합니다.
+
+   h1 = { "a" => 100, "b" => 200, :c => "c" }
+   p h1.compare_by_identity?#=> false
+   p h1["a"]        #=> 100
+   
+   h1.compare_by_identity
+   
+   p h1.compare_by_identity?#=> true
+   p h1["a"]        #=> nil  # この"a"と最初の"a"とは違うオブジェクト
+   p h1[:c]         #=> "c"  # 同じ内容のシンボルはすべて同一
+
+@see [[m:Hash#compare_by_identity?]]
+
+--- compare_by_identity?-> bool
+
+ハッシュがキーの一致判定をオブジェクトの同一性を用いて行っているならば真を返します。
+
+   h1 = {}
+   p h1.compare_by_identity?#=> false
+   
+   h1.compare_by_identity
+   
+   p h1.compare_by_identity?#=> true
+
+@see [[m:Hash#compare_by_identity]]
+
+#@end
+--- shift -> [object, object]
+
+ハッシュから要素をひとつ取り除き、[key, value]という配列とし
+て返します。shiftがどの要素を返すかは不定です。
+
+shiftは破壊的メソッドです。selfは要素を取り除かれた残りのハッシュに変更されます。
+
+ハッシュが空の場合、デフォルト値（[[m:Hash#default]]または[[m:Hash#default_proc]]のブロックの値か、どちらもnilならばnil）
+を返します(このとき、[key,value] という形式の値を返すわけではないことに注意)。
+
+  h = {:ab => "some" , :cd => "all"}
+  p h.shift               #=> [:ab, "some"]
+  p h.shift               #=> [:cd, "all"]
+  p h                     #=> {}
+  p h.shift               #=> nil
+  
+  h1 = Hash.new("default value")
+  p h1                    #=> {}
+  p h1.shift              #=> "default value"
+  
+  h2 = Hash.new {|*arg| arg}
+  p h2                    #=> {}
+  p h2.shift              #=> [{}, nil]
+
+
+@see [[m:Array#shift]]
+
+--- replace(other) -> self
+
+ハッシュの内容を other の内容で置き換えます。
+
+デフォルト値の設定もotherの内容になります。
+otherがハッシュではない場合、otherのメソッドto_hashを使って暗黙の変換を試みます。
+
+self = other.to_hash.dup と同じです。
+
+@param other ハッシュまたはメソッド to_hash でハッシュに変換できるオブジェクトです。@return self를 리턴합니다.
+
+  foo = {1 => 'a', 2 => 'b'}
+  bar = {2 => 'B', 3 => 'C'}
+  
+  foo.replace(bar)
+  p foo  #=> {2=>"B", 3=>"C"}
+  
+  zoo = {}
+  zoo = bar.dup
+  p zoo  #=> {2=>"B", 3=>"C"}
+  
+  class Foo
+    def to_hash
+      {:japan => 'kyoto'}
+    end
+  end
+  
+  h = Hash.new
+  h.replace(Foo.new) #암묵적인 변환
+  p h #=> {:japan=>"kyoto"}
+  
+@see [[m:Hash#dup]],[[m:Hash#merge]],[[m:Object#to_hash]]
+  
+--- [](key) -> object | nil
+key에 연결된 값을 리턴합니다.
+
+해당하는 키에 값이 없는 경우 기본값을 리턴합니다.
+
+기본값과 값이 nil인 경우를 구분할 때는
+[[m:Hash#fetch]] 메소드나 [[m:Hash#has_key?]] 메소드를 사용해주세요.
+
+@param key 찾으려는 키를 지정합니다.
+
+  h = {:ab => "some" , :cd => "all"}
+  p h[:ab]             #=> "some"
+  p h[:ef]             #=> nil
+  
+  h1 = Hash.new("default value")
+  p h1[:non]             #=> "default value"
+  
+  h2 = Hash.new {|*arg| arg}
+  p h2[:non]             #=> [{}, :non]
+
+@see [[m:Hash.new]], [[m:Hash#fetch]],[[m:Hash#values_at]],[[m:Hash#has_key?]], [[m:Hash#default]], [[m:Hash#default_proc]]
+
+--- default -> object | nil
+--- default(key) -> object | nil
+해쉬의 기본값을 리턴합니다.
+
+해쉬의 기본값이 블록으로 주어진 경우 위의 방식으로 사용하면
+리턴값이 nil이므로 주의해서 사용해주세요.이 문자를 해결하려면
+아래의 방식으로 사용하거나 [[m:Hash#default_proc]] 메소드를 사용해주세요.
+
+2 番目の形式はハッシュがデフォルト値としてブロックを持つ場合に、
+self と引数 key をブロックに渡して評価し、その結果を返します。
+
+@param key デフォルトのブロックにキーとして渡されます。
+
+  h = Hash.new("default")
+  p h.default        #=> "default"
+  p h.default(:some) #=> "default"
+  p h #=>{}
+  
+  h = Hash.new{|hash, key| hash[key] ="default" }
+  p h.default        #=> nil
+  p h.default(:some) #=> "default"
+  p h                #=> {:some=>"default"}
+  
+  h = Hash.new
+  p h.default        #=> nil
+  p h.default(:some) #=> nil
+  p h                #=> {}
+
+@see [[m:Hash#default=]], [[m:Hash#default_proc]]
+
+--- default=(value)
+
+해쉬의 기본값을 value로 변경합니다.対応する値が存
+在しないキーで検索した時にはこの値を返すようになります。
+
+デフォルト値（ブロックを含む）が既に設定してあった場合も value で上書きします。
+
+@param value 設定するデフォルト値です。@return value를 리턴합니다.
+
+  h = {}
+  p h.default #=>nil
+  
+  h.default = "default"
+  p h.default #=>"default"
+
+@see [[m:Hash#default]]
+
+--- default_proc -> Proc | nil
+
+해쉬의 기본값을 리턴하는 [[c:Proc]] 객체를 리턴합니다.
+해쉬가 블록 형식의 기본값을 가지지 않으면 nil을 리턴합니다.
+
+  h = Hash.new {|hash, key| "The #{key} not exist in #{hash.inspect}"}
+  p h.default              #=> nil
+  p block = h.default_proc #=> #<Proc:0x0x401a9ff4>
+  p block.call({},:foo)    #=> "The foo not exist in {}"
+  
+  h = Hash.new("default")
+  p h.default              #=> "default"
+  p h.default_proc         #=> nil
+
+@see [[m:Hash#default]]
+
+#@since 1.9.1
+--- default_proc=(pr)
+
+해쉬의 기본값을 리턴하는 [[c:Proc]] 객체를 변경합니다.
+
+이전의 기본값이 값([[m:Hash#default]])이건
+Proc([[m:Hash#default_proc]])이건 덮어쓰여집니다.
+
+to_proc 메소드로 [[c:Proc]] 객체로 변환할 수 있는
+객체를 인수로 사용할 수 있습니다.
+
+#@since 2.0.0
+nil을 지정하면 현재의 [[m:Hash#default_proc]]을 삭제합니다.
+#@end
+
+@param pr 기본값을 리턴하는 Proc 객체
+@see [[m:Hash#default_proc]], [[m:Hash#default]]
+
+#@end
+--- clone -> Hash
+--- dup -> Hash
+
+self와 같은 내용을 가진 새로운 해쉬를 리턴합니다.
+
+clone은 frozen tainted singleton-class의 정보를 포함해 복사하지만, dup은 단지 내용만 복사합니다.
+두 메소드 모두 각각의 요소 자체를 복사하진 않습니다.즉 참조하는 객체가 변하지 않는
+얕은(shallow) 복사가 이루어집니다.
+
+  h1 = {"have" => "have a","as" => "as a" }
+  h2 = h1.dup
+  
+  h2["have"] = "has"
+  p h2 #=> {"have"=>"has", "as"=>"as a"}
+  p h1 #=> {"have"=>"have a", "as"=>"as a"}
+  
+  h2["as"].upcase!  p h2 #=> {"have"=>"has", "as"=>"AS A"}
+  p h1 #=> {"have"=>"have a", "as"=>"AS A"}
+
+@see [[m:Object#clone]]
+
+--- delete(key) -> object | nil
+--- delete(key) {|key| ... } -> object
+
+key에 연결된 요소를 삭제합니다.
+
+@param key 삭제하려는 키를 지정합니다.
+
+@return 삭제된 요소를 리턴합니다.
+        key에 연결된 요소가 없으면 nil 리턴합니다.
+        
+        与えられたブロックは key にマッチする要素がなかった時に評価され、その結果を返します。
+
+  h = {:ab => "some" , :cd => "all"}
+  
+  p h.delete(:ab) #=> "some"
+  p h.delete(:ef) #=> nil
+  p h.delete(:ef){|key|"#{key} Nothing"} #=> "ef Nothing"
+  
+  p h #=> {:cd=>"all"}
+
+@see [[m:Hash#delete_if]]
+
+--- reject {|key, value| ... } -> Hash
+#@since 1.8.7
+--- reject                     -> Enumerable::Enumerator
+#@end
+
+self を複製して、ブロックを評価した値が真になる要
+素を削除したハッシュを返します。
+
+ハッシュを返すことを除けば
+[[m:Enumerable#reject]] とほぼ同じです。
+selfを破壊的に変更したい場合はかわりに[[m:Hash#delete_if]]か[[m:Hash#reject!]]を使います。
+
+  h = { 2 =>"8" ,4 =>"6" ,6 =>"4" ,8 =>"2" }
+  
+  p h.reject{|key, value| key.to_i < value.to_i} #=> {6=>"4", 8=>"2"}
+
+@see [[m:Hash#delete_if]],[[m:Hash#delete]],[[m:Enumerable#reject]]
+
+#@since 1.8.7
+#@since 1.9.1
+--- delete_if -> Enumerator
+--- reject!-> Enumerator
+#@else
+--- delete_if -> Enumerable::Enumerator
+--- reject!-> Enumerable::Enumerator
+#@end
+#@end
+--- delete_if {|key, value| ... } -> self
+--- reject!{|key, value| ... } -> self|nil
+
+キーと値を引数としてブロックを評価した結果が真であ
+るような要素を self から削除します。
+
+delete_if は常に self を返します。reject!は、要素を削除しなかった場合には nil を返し、
+そうでなければ self を返します。
+
+#@since 1.8.7
+#@until 1.9.1
+ブロックを省略した場合は [[c:Enumerable::Enumerator]] を返します。#@else
+ブロックを省略した場合は [[c:Enumerator]] を返します。#@end
+#@end
+
+  h = { 2 => "8" ,4 => "6" ,6 => "4" ,8 => "2" }
+  
+  p h.reject!{|key, value| key.to_i < value.to_i }   #=> { 6 => "4", 8 => "2" }
+  p h                                                #=> { 6 => "4", 8 => "2" }
+  
+  p h.delete_if{|key, value| key.to_i < value.to_i } #=> { 6 => "4", 8 => "2" }
+  p h.reject!{|key, value| key.to_i < value.to_i }   #=> nil
+
+@see [[m:Hash#reject]],[[m:Hash#delete]]
+#@since 1.9.2
+@see [[m:Hash#keep_if]],[[m:Hash#select!]]
+#@end
+
+--- each {|key, value| ... } -> self
+--- each_pair {|key, value| ... } -> self
+#@since 1.8.7
+#@since 1.9.1
+--- each      -> Enumerator
+--- each_pair -> Enumerator
+#@else
+--- each      -> Enumerable::Enumerator
+--- each_pair -> Enumerable::Enumerator
+#@end
+#@end
+
+ハッシュのキーと値を引数としてブロックを評価します。
+
+#@since 1.9.1
+反復の際の評価順序はキーが追加された順です。#@else
+反復の際の評価順序は不定です。#@end
+#@since 1.8.7
+ブロック付きの場合 self を、
+#@since 1.9.1
+無しで呼ばれた場合 [[c:Enumerator]] を返します。#@else
+無しで呼ばれた場合 [[c:Enumerable::Enumerator]] を返します。#@end
+#@else
+self를 리턴합니다.
+#@end
+
+#@if( version >= "1.8.0" and version < "1.9.1" )
+each と each_pair ではブロック引数の受渡し方が異なります。
+each は キーと値の配列を１引数で、each_pair は別々に２引数でブロックに値を渡します。
+これによりブロック引数をひとつだけ指定した場合の挙動が異なります。
+ブロック引数を２つ指定するようにすれば同じ挙動になります。
+
+  {:a=>1, :b=>2}.each {|a| p a}
+  #=> [:a, 1]
+      [:b, 2]
+  
+  {:a=>1, :b=>2}.each_pair {|*a| p a} #明示的に配列で受ける
+  #=> [:a, 1]
+      [:b, 2]
+  
+  {:a=>1, :b=>2}.each {|k, v| p [k, v]}  #each_pairでも同じ結果
+  #=> [:a, 1]
+      [:b, 2]
+#@end
+
+#@since 1.8.7
+each_pair는 each의 별칭입니다.
+
+  {:a=>1, :b=>2}.each {|a| p a}
+  #=> [:a, 1]
+      [:b, 2]
+ 
+  {:a=>1, :b=>2}.each_pair {|*a| p a} 
+  #=> [[:a, 1]]
+      [[:b, 2]]
+  
+  {:a=>1, :b=>2}.each {|k, v| p [k, v]}  #each_pairでも同じ結果
+  #=> [:a, 1]
+      [:b, 2]
+  
+#@since 1.9.1
+  p({:a=>1, :b=>2}.each_pair)  # => #<Enumerator: {:a=>1, :b=>2}:each_pair>
+#@else
+  p({:a=>1, :b=>2}.each_pair)  # => #<Enumerable::Enumerator:0xbb19e4>
+#@end
+#@end
+
+@see [[m:Hash#each_key]],[[m:Hash#each_value]]
+
+--- each_key {|key| ... } -> self
+#@since 1.8.7
+#@since 1.9.1
+--- each_key -> Enumerator
+#@else
+--- each_key -> Enumerable::Enumerator
+#@end
+#@end
+
+ハッシュのキーを引数としてブロックを評価します。
+
+#@since 1.9.1
+反復の際の評価順序はキーが追加された順です。#@else
+反復の際の評価順序は不定です。#@end
+#@since 1.8.7
+ブロック付きの場合selfを、
+#@since 1.9.1
+無しで呼ばれた場合[[c:Enumerator]]を返します。#@else
+無しで呼ばれた場合[[c:Enumerable::Enumerator]]を返します。#@end
+#@else
+self를 리턴합니다.
+#@end
+
+  {:a=>1, :b=>2}.each_key {|k| p k}
+  #=> :a
+      :b
+       
+#@since 1.8.7
+#@since 1.9.1
+  p({:a=>1, :b=>2}.each_key)  # => #<Enumerator: {:a=>1, :b=>2}:each_key>
+#@else
+  p({:a=>1, :b=>2}.each_key)  #=> #<Enumerable::Enumerator:0xbb19e4>
+#@end
+#@end
+
+@see [[m:Hash#each_pair]],[[m:Hash#each_value]]
+
+--- each_value {|value| ... } -> self
+#@since 1.8.7
+#@since 1.9.1
+--- each_value -> Enumerator
+#@else
+--- each_value -> Enumerable::Enumerator
+#@end
+#@end
+
+ハッシュの値を引数としてブロックを評価します。
+
+#@since 1.9.1
+反復の際の評価順序はキーが追加された順です。#@else
+反復の際の評価順序は不定です。#@end
+#@since 1.8.7
+ブロック付きの場合selfを、
+#@since 1.9.1
+無しで呼ばれた場合 [[c:Enumerator]] を返します。#@else
+無しで呼ばれた場合 [[c:Enumerable::Enumerator]] を返します。#@end
+#@else
+self를 리턴합니다.
+#@end
+
+  {:a=>1, :b=>2}.each_value {|v| p v}
+  #=> 1
+      2
+  
+#@since 1.8.7
+#@since 1.9.1
+  p({:a=>1, :b=>2}.each_value)  # => #<Enumerator: {:a=>1, :b=>2}:each_value>
+#@else
+  p({:a=>1, :b=>2}.each_value)  #=> #<Enumerable::Enumerator:0xbb19e4>
+#@end
+#@end
+
+@see [[m:Hash#each_pair]],[[m:Hash#each_key]]
+
+#@if (version < "1.9.1")
+--- index(val) -> object
+#@else
+--- key(val) -> object
+--- index(val) -> object
+#@end
+
+値 val に対応するキーを返します。対応する要素が存在しない時には
+nil を返します。
+
+該当するキーが複数存在する場合、どのキーを返すかは不定です。
+
+Hash#index は obsolete です。사용하면 경고가 출력됩니다.
+
+@param val 探索に用いる値を指定します。
+
+#@if (version >= "1.9.1")
+  h = {:ab => "some" , :cd => "all" , :ef => "all"}
+  
+  p h.key("some") #=> :ab
+  p h.key("all") #=> :cd
+  p h.key("at") #=> nil
+#@else
+  h = {:ab => "some" , :cd => "all" , :ef => "all"}
+  
+  p h.index("some") #=> :ab
+  p h.index("all") #=> :cd
+  p h.index("at") #=> nil
+#@end
+
+@see [[m:Hash#invert]]
+
+--- values_at(*keys) -> [object]
+
+引数で指定されたキーに対応する値の配列を返します。
+
+キーに対応する要素がなければデフォルト値が使用されます。
+
+@param keys キーを 0 個以上指定します。
+
+@return 引数で指定されたキーに対応する値の配列を返します。        引数が指定されなかった場合は、空の配列を返します。
+
+  h = {1=>"a", 2=>"b", 3=>"c"}
+  
+  p h.values_at(1,3,4)               #=> ["a", "c", nil]
+  # [h[1], h[3] ,h[4]] と同じ
+
+@see [[m:Hash#[] ]], [[m:Hash.new]], [[m:Hash#default]], [[m:Hash#default_proc]], [[m:Array#values_at]]
+
+#@if (version < "1.9.1")
+--- indexes(*keys) -> [object]
+--- indices(*keys) -> [object]
+
+引数で指定されたキーに対応する値の配列を返します。
+
+이 메소드는 더 이상 사용되지 않습니다.
+사용하면 경고가 출력됩니다.
+[[m:Hash#values_at]] 메소드를 대신 사용해주세요.
+
+@param keys 원하는 만큼 키를 지정합니다.
+
+@see [[m:Hash#values_at]],[[m:Hash#[] ]]
+#@end
+
+--- rehash -> self
+
+キーのハッシュ値を再計算します。
+
+キーになっているオブジェクトの内容が変化した時など、
+ハッシュ値が変わってしまった場合はこのメソッドを使ってハッシュ値を再計算しない
+限り、そのキーに対応する値を取り出すことができなくなります。
+
+@raise RuntimeError [[m:Hash#each]]などのイテレータの評価途中でrehashすると発生します。@return self를 리턴합니다.
+
+  a = [ "a", "b" ]
+  h = { a => 100 }
+  
+  p h[a]       #=> 100
+  
+  a[0] = "z"
+  p h[a]       #=> nil
+  
+  h.rehash
+  p h[a]       #=> 100
+
+@see [[m:Object#hash]]
+
+--- merge(other) -> Hash
+--- merge(other) {|key, self_val, other_val| ... } -> Hash
+--- merge!(other) -> self
+--- merge!(other) {|key, self_val, other_val| ... } -> self
+
+selfとotherのハッシュの内容をマージ(統合)した結果を返します。デフォルト値はselfの設定のままです。
+
+self と other に同じキーがあった場合はブロック付きか否かで
+判定方法が違います。ブロック付きのときはブロックを呼び出して
+その返す値を重複キーに対応する値にします。ブロック付きでない
+場合は常に other の値を使います。
+
+Hash#merge!は、マージの結果でselfを変更する破壊的メソッドで、[[m:Hash#update]] の別名です。
+
+otherがハッシュではない場合、otherのメソッドto_hashを使って暗黙の変換を試みます。
+
+@param other マージ用のハッシュまたはメソッド to_hash でハッシュに変換できるオブジェクトです。
+@return マージした結果を返します
+
+  foo = {1 => 'a', 2 => 'b', 3 => 'c'}
+  bar = {2 => 'B', 3 => 'C', 4 => 'D'}
+  
+  p foo.merge(bar) #=> {1=>"a", 2=>"B", 3=>"C", 4=>"D"}
+  p foo  #=> {1=>"a", 2=>"b", 3=>"c"}
+  
+  p foo.merge!(bar) {|key, foo_val, bar_val| foo_val + bar_val } #=> {1=>"a", 2=>"bB", 3=>"cC", 4=>"D"}
+  p foo  #=> {1=>"a", 2=>"bB", 3=>"cC", 4=>"D"}
+  
+  class Foo
+    def to_hash
+      {:Australia => 'Sydney',
+       :France => 'Paris'
+       }
+    end
+  end
+  
+  h = {:Germany => 'Berlin',
+       :Australia => 'Canberra',
+       :France => 'Paris'
+       }
+  h.merge!(Foo.new) #暗黙の変換
+  p h #=> {:Germany=>"Berlin", :Australia=>"Sydney", :France=>"Paris"}
+
+@see [[m:Hash#update]],[[m:Hash#replace]]
+
+--- update(other) -> self
+--- update(other) {|key, self_val, other_val| ... } -> self
+
+selfとotherのハッシュの内容をマージ(統合)します。[[m:Hash#merge!]]와 같습니다.
+
+デフォルト値はselfの設定のままです。
+otherがハッシュではない場合、otherのメソッドto_hashを使って暗黙の変換を試みます。
+
+@param other マージ用のハッシュまたはメソッド to_hash でハッシュに変換できるオブジェクトです。
+@return マージ後のselfを返します。
+
+  foo = {1 => 'a', 2 => 'b', 3 => 'c'}
+  bar = {2 => 'B', 3 => 'C', 4 => 'D'}
+  
+  p foo.update(bar) #=> {1=>"a", 2=>"B", 3=>"C", 4=>"D"}
+  p foo  #=> {1=>"a", 2=>"B", 3=>"C", 4=>"D"}
+  
+  p foo.update(bar) {|key, foo_val, bar_val| foo_val + bar_val } #=> {1=>"a", 2=>"BB", 3=>"CC", 4=>"DD"}
+  p foo  #=> {1=>"a", 2=>"BB", 3=>"CC", 4=>"DD"}
+
+@see [[m:Hash#merge!]]
+
+--- ==(other) -> bool
+--- ===(other) -> bool
+#@since 1.8.7
+--- eql?(other) -> bool
+#@end
+
+自身と other が同じ数のキーを保持し、キーが eql? メソッドで比較して全て等しく、
+値が == メソッドで比較して全て等しい場合に真を返します。
+
+@param other 自身と比較したい Hash オブジェクトを指定します。
+
+  #(出力関数は省略)
+  { 1 => :a } == { 1 => :a }               #=> true
+  { 1 => :a } == { 1 => :a, 2 => :b }      #=> false
+  { 1 => :a } == { 1.0 => :a }             #=> false  ( 1.eql?(1.0) は false なので)
+  
+  { :x => 1 } == { :x => 1.0 }             #=> true   ( 1 == 1.0 は true なので)
+
+@see [[m:Hash#equal?]]
+
+#@until 1.8.7
+--- eql?(other) -> bool
+#@end
+--- equal?(other) -> bool
+
+指定された other が self 自身である場合のみ真を返します。
+
+@param other 自身と比較したい Hash オブジェクトを指定します。
+
+#@until 1.8.7
+ p({}.eql?({}))     #=> false 
+ a = {}
+ p a.eql?(a)        #=> true
+#@else
+ p({}.equal?({}))     #=> false 
+ a = {}
+ p a.equal?(a)        #=> true
+#@end
+
+@see [[m:Hash#==]]
+
+--- hash    -> Integer
+
+#@since 1.8.7
+自身が保持するキーと値のハッシュ値を元にして算出した整数を返します。
+自身が保持するキーや値が変化すればこのメソッドが返す値も変化します。
+
+  a = {}
+  p a.hash     #=> 0
+  a[1] = :x
+  p a.hash     #=> 329543
+
+#@else
+自身の [[m:Object#object_id]] を返します。これは [[c:Object]] クラスで定義されたデフォルトの動作です。
+メソッド hash の返り値は自身が保持するキーや値に影響されません。
+
+  a = {}
+  p a.hash    #=> 538688380
+  a[1] = :a
+  p a.hash    #=> 538688380
+
+#@end
+
+#@since 1.9.1
+
+--- assoc(key)   ->  Array | nil
+
+ハッシュが key をキーとして持つとき、見つかった要素のキーと値のペア
+を配列として返します。
+
+キーの同一性判定には eql? メソッドではなく == メソッドを使います。
+key が見つからなかった場合は、nil を返します。
+
+@param key 検索するキー
+
+   h = {"colors"  => ["red", "blue", "green"],
+        "letters" => ["a", "b", "c" ]}
+   h.assoc("letters")  #=> ["letters", ["a", "b", "c"]]
+   h.assoc("foo")      #=> nil
+
+
+
+@see [[m:Array#assoc]]
+
+
+--- flatten(level = 1) -> Array
+
+自身を平滑化した配列を生成して返します。
+
+全てのキーと値を新しい配列の要素として展開します。
+[[m:Array#flatten]] と違って、デフォルトではこのメソッドは自身を
+再帰的に平滑化しません。level を指定すると指定されたレベルまで
+再帰的に平滑化します。
+
+@param level 展開するレベル
+
+   a =  {1=> "one", 2 => [2,"two"], 3 => "three"}
+   a.flatten     #=> [1, "one", 2, [2, "two"], 3, "three"]
+   a.flatten(1)  #=> [1, "one", 2, [2, "two"], 3, "three"]
+   a.flatten(2)  #=> [1, "one", 2, 2, "two", 3, "three"]
+   a.flatten(0)  #=> [[1, "one"], [2, [2, "two"]], [3, "three"]]
+   a.flatten(-1) #=> [1, "one", 2, 2, "two", 3, "three"]
+
+@see [[m:Array#flatten]]
+
+--- rassoc(value) -> Array | nil
+
+ハッシュ内を検索して，引数 obj と 一致する値を探します。
+
+比較は == メソッドを使用して行われます。一致する値があれば，
+該当するキーとその値とを要素とするサイズ 2 の配列を返します。
+ない場合には nil を返します。
+
+@param value 探索する値。
+
+   a = {1=> "one", 2 => "two", 3 => "three", "ii" => "two"}
+   a.rassoc("two")    #=> [2, "two"]
+   a.rassoc("four")   #=> nil
+
+@see [[m:Hash#assoc]], [[m:Array#rassoc]]
+
+#@end
+
+#@since 1.8.7
+#@since 1.9.1
+--- select                        -> Enumerator
+#@else
+--- select                        -> Enumerable::Enumerator
+#@end
+#@end
+#@since 1.9.1
+--- select {|key, value| ... }   -> Hash
+
+key, value のペアについてブロックを評価し，真となるペアだけを含む
+ハッシュを生成して返します。
+
+   h = { "a" => 100, "b" => 200, "c" => 300 }
+   h.select {|k,v| k > "a"}  #=> {"b" => 200, "c" => 300}
+   h.select {|k,v| v < 200}  #=> {"a" => 100}
+
+#@else
+--- select {|key, value| ... }   -> Array
+
+key, value のペアについてブロックを評価し、真となるペアだけを含む
+配列を生成して返します。
+
+生成される配列は、[key, value] を要素とする配列です。
+
+   h = { "a" => 100, "b" => 200, "c" => 300 }
+   h.select {|k,v| k > "a"}  #=> [["b", 200], ["c", 300]]
+   h.select {|k,v| v < 200}  #=> [["a", 100]]
+
+#@end
+
+#@since 1.9.1
+--- to_s     -> String
+#@end
+--- inspect  -> String
+
+ハッシュの内容を人間に読みやすい文字列にして返します。
+
+    h = { "c" => 300, "a" => 100, "d" => 400, "c" => 300  }
+    h.inspect   # => "{\"a\"=>100, \"c\"=>300, \"d\"=>400}"
+
+#@until 1.9.1
+--- to_s     -> String
+
+ハッシュの内容を self.to_a.to_s で文字列化して返します。
+
+    h = { "c" => 300, "a" => 100, "d" => 400, "c" => 300  }
+    h.to_s   # => "a100c300d400"
+#@end
+
+--- sort              -> Array
+--- sort{|a, b| ... } -> Array
+
+ハッシュを [key, value] を要素とする配列の配列に変換して，それをソー
+トした配列を返します。
+
+  h = { "a" => 20, "b" => 30, "c" => 10  }
+  h.sort                       #=> [["a", 20], ["b", 30], ["c", 10]]
+  h.sort {|a,b| a[1]<=>b[1]}   #=> [["c", 10], ["a", 20], ["b", 30]]
+
+@see [[m:Array#sort]]
+#@since 1.9.2
+--- keep_if {|key, value| ... } -> self
+--- select!{|key, value| ... } -> self | nil
+--- keep_if -> Enumerator
+--- select!-> Enumerator
+
+キーと値を引数としてブロックを評価した結果が真であるような要素を self
+に残します。
+
+keep_if は常に self を返します。select!はオブジェクトが変更された場合に self を、
+されていない場合に nil を返します。
+
+ブロックが与えられなかった場合は、自身と keep_if から生成した
+[[c:Enumerator]] オブジェクトを返します。
+
+@see [[m:Hash#select]], [[m:Hash#delete_if]],[[m:Hash#reject!]]
+#@end

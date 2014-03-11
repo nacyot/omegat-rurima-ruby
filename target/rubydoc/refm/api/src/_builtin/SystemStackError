@@ -1,0 +1,19 @@
+#@since 1.9.1
+= class SystemStackError < Exception
+#@else
+= class SystemStackError < StandardError
+#@end
+
+시스템 스택이 넘치면 발생합니다.
+
+가장 대표적인 예로 무한히 재귀적으로 메소드가 호출될 때가 있습니다.
+
+대부분 실제로 스택이 넘치기 전에
+SystemStackError 예외가 발생하지만
+운이 없으면 예외가 발생하기도 전에 스택이 넘쳐버리는 경우도 있습니다.
+그런 경우에는 [BUG]라는 메시지가 출력되거나
+"segmentation fault (core dumped)" 같은 메시지가 출력되면서
+프로세스가 비정상적으로 종료됩니다.
+
+현재 이 문제의 해결책을 검토중이지만
+언제 고쳐질지 정해진 바는 없습니다.

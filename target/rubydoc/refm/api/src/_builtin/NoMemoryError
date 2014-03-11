@@ -1,0 +1,3 @@
+= class NoMemoryError < Exception
+
+메모리 확보에 실패했을 때 발생하는 예외입니다.

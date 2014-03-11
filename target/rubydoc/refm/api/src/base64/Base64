@@ -1,0 +1,205 @@
+#@since 1.8.2
+#@since 1.9.1
+
+= module Base64
+
+Base64 인코드/디코드에 관련된 메소드가 정의된 모듈입니다.
+
+== Module Functions
+
+--- decode64(str) -> String
+주어진 문자열을 Base64 디코드한 데이터를 리턴합니다.
+
+이 메소드는 [[RFC:2045]]에 따릅니다.
+
+@param str Base64 디코드하려는 문자열을 지정합니다.
+
+   require 'base64'
+   str = 'VGhpcyBpcyBsaW5lIG9uZQpUaGlzIG' +
+         'lzIGxpbmUgdHdvClRoaXMgaXMgbGlu' +
+         'ZSB0aHJlZQpBbmQgc28gb24uLi4K'
+   puts Base64.decode64(str)
+
+   # This is line one
+   # This is line two
+   # This is line three
+   # And so on...
+
+
+--- encode64(bin) -> String
+주어진 데이터를 Base64 인코드한 문자열을 리턴합니다.
+
+이 메소드는 [[RFC:2045]]에 따릅니다.
+인코드한 후에 60문자마다 줄바꿈을 집어넣습니다.
+
+@param bin Base64 인코드하려는 데이터를 지정합니다.
+
+
+    require 'base64'
+    Base64.encode64("Now is the time for all good coders\nto learn Ruby")
+
+    # => Tm93IGlzIHRoZSB0aW1lIGZvciBhbGwgZ29vZCBjb2RlcnMKdG8gbGVhcm4g
+    #    UnVieQ==
+
+
+--- strict_decode64(str) -> String
+주어진 문자열을 Base64 디코드한 데이터를 리턴합니다.
+
+이 메소드는 [[RFC:4648]]을 따릅니다.
+
+
+@param str Base64 디코드하려는 문자열을 지정합니다.
+
+@raise ArgumentError 주어진 인수가 Base64로 인코드된 데이터 형식을 갖추지 못한 경우에 발생합니다.
+       예를 들어 알파벳이 아닌 문자열이나 CR, LF가 포함되어있으면 이 예외가 발생합니다.
+
+--- strict_encode64(bin) -> String
+주어진 데이터를 Base64 인코드한 문자열을 리턴합니다.
+
+이 메소드는 [[RFC:4648]]을 따릅니다.
+줄바꿈을 추가하지 않습니다.
+
+@param bin Base64 인코드하려는 데이터를 지정합니다.
+
+--- urlsafe_decode64(str) -> String
+주어진 문자열을 Base64로 디코드한 데이터를 리턴합니다.
+
+이 메소드는 [[RFC:4648]]의 "Base 64 Encoding with URL and Filename Safe Alphabet"을 따릅니다.
+"+"는 "-"으로 치환하고, "/"는 "_"으로 치환합니다.
+
+@param str Base64 디코드하려는 문자열을 지정합니다.
+
+@raise ArgumentError 주어진 인수가 Base64로 인코드된 데이터 형식을 갖추지 못한 경우에 발생합니다.
+       예를 들어 알파벳이 아닌 문자열이나 CR, LF가 포함되어있으면 이 예외가 발생합니다.
+
+--- urlsafe_encode64(bin) -> String
+주어진 데이터를 Base64로 인코드한 문자열을 리턴합니다.
+
+이 메소드는 [[RFC:4648]]의 "Base 64 Encoding with URL and Filename Safe Alphabet"을 따릅니다.
+"+"는 "-"으로 치환하고, "/"는 "_"으로 치환합니다.
+
+@param bin Base64 인코드하려는 데이터를 지정합니다.
+
+
+#@else
+= module Base64
+
+Base64 인코드/디코드에 관련된 메소드가 정의된 모듈입니다.
+
+== Module Functions
+
+--- decode64(str) -> String
+
+Base64 인코드된 문자열 str을 디코드합니다.
+
+@param str デコードしたい文字列です。
+
+--- encode64(str) -> String
+
+문자열 str을 Base64로 인코드합니다.
+
+@param str 인코드하려는 문자열을 지정합니다.
+
+--- decode_b(str) -> String
+
+[[RFC:2047]]에 정의된 encoded-word을 포함한 문자열 str을 디코드합니다.
+
+encoded-word는 
+
+  "=?" + charset + "?" + encoding + "?" + encoded-text + "?="
+
+와 같은 형식으로 메일 헤더에서 사용합니다.
+
+이 함수는 charset으로 "iso-2022-jp"와 "shift_jis"를 사용할 수 있으며
+encoding으로는 "B" encoding (Base64)만을 사용할 수 있습니다.
+
+버그:
+
+메소드 내부에서 [[m:Kconv.#toeuc]]을 호출하는데, [[lib:kconv]]가
+내부에서 사용하는 [[lib:nkf]] 라이브러리가 한발 앞서 디코드를 수행합니다.
+따라서 이 함수를 사용할 이유가 없습니다. 이전 Kconv의 구현에서는
+NKF를 사용하지 않았기 때문에 이런 문제가 생겼다고 보여집니다.
+
+@param str デコードしたい文字列です。
+
+--- b64encode(bin, len = 60) -> ()
+
+문자열 bin을 인코드하고 len 문자마다 줄바꿈을 넣습니다.
+
+表示までしてしまうのはサンプルだからです。
+
+#@include(Base64__Deprecated)
+
+= reopen Kernel
+
+== Module Functions
+
+--- decode64(str) -> String
+
+[[m:Base64.#decode64]]와 같습니다.이 메소드는 이후 폐기될 수 있으므로
+Base64을 사용해주세요.
+
+--- encode64(str) -> String
+
+[[m:Base64.#encode64]]와 같습니다.이 메소드는 이후 폐기될 수 있으므로
+Base64을 사용해주세요.
+
+--- decode_b(str) -> String
+
+[[m:Base64.#decode_b]]와 같습니다.이 메소드는 이후 폐기될 수 있으므로
+Base64을 사용해주세요.
+
+--- b64encode(bin, len = 60) -> ()
+
+[[m:Base64.#b64encode]]와 같습니다.이 메소드는 이후 폐기될 수 있으므로
+Base64을 사용해주세요.
+
+#@end
+
+#@if (version <= "1.8.1")
+= reopen Kernel
+
+== Private Instance Methods
+
+--- decode64(str) -> String
+
+문자열 str을 Base64로 인코드합니다.
+
+@param str 인코드하려는 문자열을 지정합니다.
+
+--- encode64(str) -> String
+
+문자열 str을 Base64로 인코드합니다.
+
+@param str 인코드하려는 문자열을 지정합니다.
+
+--- decode_b(str) -> String
+
+[[RFC:2047]]에 정의된 encoded-word을 포함한 문자열 str을 디코드합니다.
+
+encoded-word는 
+
+  "=?" + charset + "?" + encoding + "?" + encoded-text + "?="
+
+와 같은 형식으로 메일 헤더에서 사용합니다.
+
+이 함수는 charset으로 "iso-2022-jp"와 "shift_jis"를 사용할 수 있으며
+encoding으로는 "B" encoding (Base64)만을 사용할 수 있습니다.
+
+버그:
+
+메소드 내부에서 [[m:Kconv.#toeuc]]을 호출하는데, [[lib:kconv]]가
+내부에서 사용하는 [[lib:nkf]] 라이브러리가 한발 앞서 디코드를 수행합니다.
+따라서 이 함수를 사용할 이유가 없습니다. 이전 Kconv의 구현에서는
+NKF를 사용하지 않았기 때문에 이런 문제가 생겼다고 보여집니다.
+
+@param str デコードしたい文字列です。
+
+--- b64encode(bin, len = 60) -> ()
+
+문자열 bin을 인코드하고 len 문자마다 줄바꿈을 넣습니다.
+
+表示までしてしまうのはサンプルだからです。
+
+#@end
+#@end

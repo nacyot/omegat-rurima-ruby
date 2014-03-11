@@ -1,0 +1,5 @@
+= class RDoc::AnonClass < RDoc::ClassModule
+
+익명 클래스를 나타내는 클래스입니다.
+
+사용되지 않습니다.
